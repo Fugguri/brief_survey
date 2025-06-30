@@ -1,7 +1,7 @@
 # 🇺🇸 English
 
 # BriefSurvey
-Universal Dynamic Survey for Telegram Bots with `aiogram_dialog` and Pydantic
+Universal Dynamic Survey for Telegram Bots with `aiogram` version 3 `aiogram_dialog` and Pydantic
 ## Description
 BriefSurvey is a module for quick and flexible creation of dialog-based surveys in Telegram using aiogram v3 and aiogram_dialog.
 
