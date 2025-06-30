@@ -201,10 +201,17 @@ class BriefSurvey:
         await self.start(message, dialog_manager, state)
 
 
-    def register_handlers(self, dp: Dispatcher, command_start: str = "start_survey", callback_data:str=None):
-        dp.message.register(self.cmd_start_survey_handler, Command(command_start))
+    def register_handlers(self, dp: Dispatcher,
+                          command_start: str = "start_survey",
+                          callback_data:str=None,
+                          text:str=None,
+                          ):
+        if command_start:
+            dp.message.register(self.cmd_start_survey_handler, Command(command_start))
         if callback_data:
             dp.callback_query.register(self.cmd_start_survey_handler, F.data == 'fill_in_profile')
+        if text:
+            dp.message.register(self.cmd_start_survey_handler, F.text == text)
 
         dp.include_router(self.get_dialog())
         setup_dialogs(dp)
