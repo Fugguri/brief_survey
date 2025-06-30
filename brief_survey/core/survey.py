@@ -211,7 +211,7 @@ class BriefSurvey:
         if callback_data:
             dp.callback_query.register(self.cmd_start_survey_handler, F.data == 'fill_in_profile')
         if text:
-            dp.message.register(self.cmd_start_survey_handler, F.text.lower() == text)
+            dp.message.register(self.cmd_start_survey_handler, F.text == text)
 
         dp.include_router(self.get_dialog())
         setup_dialogs(dp)
