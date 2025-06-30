@@ -5,7 +5,7 @@ setup(
     version="0.1.0",
     description="Dynamic survey/dialog with aiogram_dialog and Pydantic support",
     author="Fugguri",
-    url="https://github.com/yourusername/brief_survey",  # тут ссылка на твой репозиторий
+    url="https://github.com/Fugguri/brief_survey",
 
     packages=find_packages(),
     install_requires=[
