@@ -42,22 +42,6 @@ class BriefSurvey:
         self.states_prefix = states_prefix
         self._dialog = None
 
-        self.States, self.state_map = self._create_states_group(
-            class_name=self.states_prefix,
-            state_names=[q.name for q in self.questions] + ["finish"],
-        )
-
-        self.windows = [self._make_window_for_question(q) for q in self.questions]
-        self.windows.append(
-            Window(
-                Const("Спасибо за заполнение!"),
-                Button(Const("Завершить"), id="finish", on_click=self._on_finish),
-                state=self.state_map["finish"],
-            )
-        )
-
-        self._dialog = Dialog(*self.windows)
-
     @staticmethod
     def _create_states_group(class_name: str, state_names: List[str]):
         attrs = {name: State() for name in state_names}
@@ -261,7 +245,21 @@ class BriefSurvey:
             dp.callback_query.register(self.cmd_start_survey_handler, F.data == 'fill_in_profile')
         if text:
             dp.message.register(self.cmd_start_survey_handler, F.text == text)
+        self.States, self.state_map = self._create_states_group(
+            class_name=self.states_prefix,
+            state_names=[q.name for q in self.questions] + ["finish"],
+        )
 
+        self.windows = [self._make_window_for_question(q) for q in self.questions]
+        self.windows.append(
+            Window(
+                Const("Спасибо за заполнение!"),
+                Button(Const("Завершить"), id="finish", on_click=self._on_finish),
+                state=self.state_map["finish"],
+            )
+        )
+
+        self._dialog = Dialog(*self.windows)
         dp.include_router(self.get_dialog())
         setup_dialogs(dp)
 
