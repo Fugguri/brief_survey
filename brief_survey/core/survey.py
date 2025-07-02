@@ -1,4 +1,6 @@
 from typing import List, Optional, Callable, Any, Dict, Union, Literal, Tuple
+
+from aiogram.enums import ContentType
 from pydantic import BaseModel, ValidationError, Field
 from aiogram import types, Dispatcher, F
 from aiogram.fsm.context import FSMContext
@@ -122,6 +124,30 @@ class BriefSurvey:
         await c.answer(f"Выбрано: {', '.join(multi_selected) if multi_selected else 'ничего'}")
         await manager.show()
 
+    async def _process_media_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
+        state_name = manager.current_context().state.state.split(":")[1]
+        question = self._get_question(state_name)
+        if not question:
+            await message.answer("Ошибка: вопрос не найден.")
+            return
+
+        if message.photo:
+            file_id = message.photo[-1].file_id
+        elif message.video:
+            file_id = message.video.file_id
+        else:
+            await message.answer(self.messages["invalid_input"])
+            return
+
+        ctx_data = manager.current_context().dialog_data
+        media_list = ctx_data.get(question.name, [])
+        if not isinstance(media_list, list):
+            media_list = [media_list]
+        media_list.append(file_id)
+        ctx_data[question.name] = media_list
+
+        await message.answer(f"Файл добавлен. Отправьте ещё или нажмите 'Готово'.")
+
     async def _confirm_multi_choice(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         ctx_data = manager.current_context().dialog_data
 
@@ -161,6 +187,21 @@ class BriefSurvey:
             ]
             confirm_btn = Button(Const("Подтвердить выбор"), id="confirm", on_click=self._confirm_multi_choice)
             window = Window(Const(qtext), *buttons, confirm_btn, state=state)
+        elif question.type in ["photo", "video", "media"]:
+            # Ожидаем медиа (фото или видео)
+            allowed_types = []
+            if question.type == "photo":
+                allowed_types = [ContentType.PHOTO]
+            elif question.type == "video":
+                allowed_types = [ContentType.VIDEO]
+            else:
+                allowed_types = [ContentType.PHOTO, ContentType.VIDEO]
+
+            window = Window(
+                Const(qtext),
+                MessageInput(self._process_media_input, content_types=allowed_types),
+                state=state,
+            )
         else:
             raise NotImplementedError(f"Тип вопроса {question.type} не поддерживается")
 
@@ -227,7 +268,7 @@ class BriefSurvey:
     def add_question(
             self,
             text: str,
-            question_type: Literal["text", "number", "choice", "multi_choice"]="text",
+            question_type: Literal["text", "number", "choice", "multi_choice","photo", "video", "media"]="text",
             name: str = None,
             choices: Optional[List[str]] = None,
             *args,
@@ -238,7 +279,7 @@ class BriefSurvey:
 
             Args:
                 text (str): Текст вопроса. Не может быть пустым.
-                question_type (Literal["text", "number", "choice", "multi_choice"]): Тип вопроса.
+                question_type (Literal["text", "number", "choice", "multi_choice","photo", "video", "media"]): Тип вопроса.
                     - "text" — текстовый вопрос,
                     - "number" — числовой вопрос,
                     - "choice" — выбор одного варианта,
@@ -278,6 +319,8 @@ class BriefSurvey:
             return (str, Field(default=None))
         elif question_type == "number":
             return (float, Field(default=None))
+        elif question_type in ("photo", "video", "media"):
+            return (Optional[List[str]], Field(default_factory=list))
         else:
             return (str, Field(default=None))
 

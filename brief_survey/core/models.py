@@ -4,7 +4,7 @@ from pydantic import BaseModel, field_validator
 class QuestionBase(BaseModel):
     name: str
     text: str
-    type: Literal[ "text" , "number" , "choice" , "multi_choice"]   # "text" | "number" | "choice" | "multi_choice"
+    type: Literal["text", "number", "choice", "multi_choice","photo", "video", "media"]  # "text" | "number" | "choice" | "multi_choice"
     validator: Optional[Callable[[str], bool]] = None
 
     @field_validator('type')
@@ -36,7 +36,6 @@ class MultiChoiceQuestion(QuestionBase):
             raise ValueError("Choices must be a non-empty list")
         return v
 
-
 Question = Union[QuestionBase, ChoiceQuestion, MultiChoiceQuestion]
 
 
@@ -48,6 +47,9 @@ class SurveyResult(BaseModel):
 
 QUESTION_TYPE_MAP = {
     "text": QuestionBase,
+    "photo": QuestionBase,
+    "video": QuestionBase,
+    "media": QuestionBase,
     "number": QuestionBase,
     "choice": ChoiceQuestion,
     "multi_choice": MultiChoiceQuestion,
