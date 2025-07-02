@@ -14,7 +14,5 @@ class QuestionBuilder:
         model_cls = QUESTION_TYPE_MAP.get(question_type)
         if not model_cls:
             raise UnknownQuestionTypeError
-        if question_type in ("choice", "multi_choice"):
-            return model_cls(name=name, text=text, choices=choices or [],*args,**kwargs)
-        else:
-            return model_cls(name=name, text=text, type=question_type,choices=choices, *args,**kwargs)
+
+        return model_cls(name=name, text=text, type=question_type,choices=choices, *args,**kwargs)

@@ -1,17 +1,19 @@
 from typing import List, Optional, Tuple, Callable, Union, Literal
 from pydantic import BaseModel, field_validator
 
+from brief_survey.core.exceptions.questions import UnknownQuestionTypeError
+
+QuestionType = Literal["text", "number", "choice", "multi_choice", "photo", "video", "media"]
 class QuestionBase(BaseModel):
     name: str
     text: str
-    type: Literal["text", "number", "choice", "multi_choice","photo", "video", "media"]  # "text" | "number" | "choice" | "multi_choice"
+    type: QuestionType
     validator: Optional[Callable[[str], bool]] = None
 
     @field_validator('type')
     def type_must_be_known(cls, v):
-        allowed = {"text", "number", "choice", "multi_choice"}
-        if v not in allowed:
-            raise ValueError(f"Type must be one of {allowed}")
+        if v not in QuestionType.__args__:# type-ignore
+            raise UnknownQuestionTypeError
         return v
 
 

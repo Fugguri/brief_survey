@@ -13,7 +13,7 @@ from aiogram.fsm.state import StatesGroup, State
 
 from .builders.questions import QuestionBuilder
 from .exceptions.questions import NoQuestionsEnteredError,MessageNotEnteredError
-from .models import Question
+from .models import Question, QuestionType
 
 from typing import Dict, Tuple, Any, List
 from pydantic import BaseModel, create_model, Field
@@ -268,7 +268,7 @@ class BriefSurvey:
     def add_question(
             self,
             text: str,
-            question_type: Literal["text", "number", "choice", "multi_choice","photo", "video", "media"]="text",
+            question_type: QuestionType="text",
             name: str = None,
             choices: Optional[List[str]] = None,
             *args,
