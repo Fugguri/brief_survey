@@ -1,7 +1,6 @@
 from typing import List, Optional, Tuple, Callable, Union, Literal
 from pydantic import BaseModel, field_validator
 
-
 class QuestionBase(BaseModel):
     name: str
     text: str
@@ -46,3 +45,10 @@ class SurveyResult(BaseModel):
     name: Optional[str]
     age: Optional[int]
     gender: Optional[str]
+
+QUESTION_TYPE_MAP = {
+    "text": QuestionBase,
+    "number": QuestionBase,
+    "choice": ChoiceQuestion,
+    "multi_choice": MultiChoiceQuestion,
+}

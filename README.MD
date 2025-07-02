@@ -56,6 +56,7 @@ questions = [
         ],
     ),
 ]
+
 ```
 # 2. Define a result model:
 ``` python

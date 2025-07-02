@@ -1,5 +1,5 @@
-from typing import List, Optional, Callable, Any, Dict, Union
-from pydantic import BaseModel, ValidationError
+from typing import List, Optional, Callable, Any, Dict, Union, Literal, Tuple
+from pydantic import BaseModel, ValidationError, Field
 from aiogram import types, Dispatcher, F
 from aiogram.fsm.context import FSMContext
 from aiogram_dialog import Dialog, DialogManager, Window, StartMode, setup_dialogs
@@ -9,16 +9,20 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram.filters import Command
 from aiogram.fsm.state import StatesGroup, State
 
+from .builders.questions import QuestionBuilder
+from .exceptions.questions import NoQuestionsEnteredError,MessageNotEnteredError
 from .models import Question
 
+from typing import Dict, Tuple, Any, List
+from pydantic import BaseModel, create_model, Field
 
 class BriefSurvey:
     def __init__(
         self,
-        questions: List[Question],
         *,
         save_handler: Callable[[int, Any], Any],
-        result_model: BaseModel,
+        result_model: BaseModel = None,
+        questions: Optional[List[Question]]=[],
         messages: Optional[Dict[str, str]] = None,
         states_prefix: str = "SurveyStates",
     ):
@@ -179,9 +183,9 @@ class BriefSurvey:
             print("Save handler error:", e)
             await c.message.answer(self.messages["save_fail"])
         else:
-            await c.message.delete()
             await c.message.answer(self.messages["save_success"])
         finally:
+            await c.message.delete()
             await manager.done()
 
     async def start(self, message: types.Message, dialog_manager: DialogManager, state: FSMContext):
@@ -206,6 +210,10 @@ class BriefSurvey:
                           callback_data:str=None,
                           text:str=None,
                           ):
+        if not self.questions:
+            raise NoQuestionsEnteredError
+        else:
+            self.create_result_model_from_questions()
         if command_start:
             dp.message.register(self.cmd_start_survey_handler, Command(command_start))
         if callback_data:
@@ -215,3 +223,82 @@ class BriefSurvey:
 
         dp.include_router(self.get_dialog())
         setup_dialogs(dp)
+
+    def add_question(
+            self,
+            text: str,
+            question_type: Literal["text", "number", "choice", "multi_choice"]="text",
+            name: str = None,
+            choices: Optional[List[str]] = None,
+            *args,
+            **kwargs
+    ):
+        """
+            Добавляет новый вопрос в конец опроса.
+
+            Args:
+                text (str): Текст вопроса. Не может быть пустым.
+                question_type (Literal["text", "number", "choice", "multi_choice"]): Тип вопроса.
+                    - "text" — текстовый вопрос,
+                    - "number" — числовой вопрос,
+                    - "choice" — выбор одного варианта,
+                    - "multi_choice" — выбор нескольких вариантов.
+                name (Optional[str], optional): Уникальное имя вопроса. Если не указано, генерируется автоматически.
+                choices (Optional[List[str]], optional): Список вариантов ответа для вопросов типа "choice" и "multi_choice".
+                *args: Дополнительные позиционные аргументы, передаваемые в билдер вопроса.
+                **kwargs: Дополнительные именованные аргументы, передаваемые в билдер вопроса.
+
+            Raises:
+                MessageNotEnteredError: Если текст вопроса пустой.
+
+            """
+
+        if not text:
+            raise MessageNotEnteredError("Текст вопроса не может быть пустым.")
+        if choices:
+            choices = [i for i in enumerate(choices)]
+        if choices and not question_type:
+            question_type = 'choice'
+        if not name:
+            name = f"q{len(self.questions) + 1}"
+
+        question_model = QuestionBuilder.create(
+                                                text=text,
+                                                question_type=question_type,
+                                                name=name,
+                                                choices=choices,
+                                                *args,
+                                                **kwargs
+                                                )
+        self.questions.append(question_model)
+
+    @staticmethod
+    def get_field_type_and_default(question_type: str) -> Tuple[Any, Any]:
+        if question_type in ("text", "choice", "multi_choice"):
+            return (str, Field(default=None))
+        elif question_type == "number":
+            return (float, Field(default=None))
+        else:
+            return (str, Field(default=None))
+
+    def create_result_model_from_questions(self) -> BaseModel:
+        """
+        Создаёт динамическую Pydantic-модель результата на основе списка вопросов.
+
+        Args:
+            questions (List): Список объектов вопросов, у каждого должен быть атрибут name и type.
+
+        Returns:
+            BaseModel: Класс модели результата.
+        """
+        fields: Dict[str, Tuple[Any, Any]] = {}
+
+        for q in self.questions:
+            field_type, default = self.get_field_type_and_default(q.type)
+            fields[q.name] = (field_type, default)
+        if not self.result_model:
+            self.result_model = create_model('DynamicResultModel', **fields)
+            return self.result_model
+        else:
+            DynamicResultModel = create_model('DynamicResultModel', **fields)
+            return DynamicResultModel
