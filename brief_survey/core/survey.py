@@ -296,7 +296,7 @@ class BriefSurvey:
             raise MessageNotEnteredError("Текст вопроса не может быть пустым.")
         if choices:
             choices = [i for i in enumerate(choices)]
-        if choices and not question_type:
+        if choices and question_type=="text":
             question_type = 'choice'
         if not name:
             name = f"q{len(self.questions) + 1}"
