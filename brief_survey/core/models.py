@@ -18,7 +18,7 @@ class QuestionBase(BaseModel):
 
 
 class ChoiceQuestion(QuestionBase):
-    choices: List[Tuple[str, str]]
+    choices: List[Tuple[str|int, str]]
     type: Literal["choice"] = "choice"
 
     @field_validator("choices")
