@@ -1,4 +1,4 @@
-from typing import List, Optional, Callable, Any, Dict, Union, Literal, Tuple
+from typing import List, Optional, Callable, Any, Dict, Union, Literal, Tuple, Set
 
 from aiogram.enums import ContentType
 from pydantic import BaseModel, ValidationError, Field
@@ -270,7 +270,7 @@ class BriefSurvey:
             text: str,
             question_type: QuestionType="text",
             name: str = None,
-            choices: Optional[List[str]] = None,
+            choices: Optional[List[str]|Tuple[str]|Set[str]] = None,
             *args,
             **kwargs
     ):
