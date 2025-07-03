@@ -12,7 +12,7 @@ from aiogram.filters import Command
 from aiogram.fsm.state import StatesGroup, State
 
 from .builders.questions import QuestionBuilder
-from .exceptions.questions import NoQuestionsEnteredError,MessageNotEnteredError
+from .exceptions.questions import NoQuestionsEnteredError, MessageTextNotEnteredError, QuestionNotFountError
 from .models.buttons import InfoButtons
 from .models.messages import InfoMessages
 from .models.question import Question, QuestionType
@@ -30,7 +30,6 @@ class BriefSurvey:
         save_handler: Callable[[int, Any], Any],
         result_model: BaseModel = None,
         questions: Optional[List[Question]]=[],
-        messages: Optional[Dict[str, str]] = None,
         states_prefix: str = "SurveyStates",
         start_command:str = "start_survey",
     ):
@@ -38,8 +37,8 @@ class BriefSurvey:
         self.save_handler = save_handler
         self.result_model = result_model
         self.command_start= start_command
-        self.info_messages = InfoMessages()
-        self.buttons = InfoButtons()
+        self.info_messages:InfoMessages = InfoMessages()
+        self.buttons:InfoButtons = InfoButtons()
         self.states_prefix = states_prefix
         self._dialog = None
 
@@ -58,7 +57,7 @@ class BriefSurvey:
         state_name = manager.current_context().state.state.split(":")[1]
         question = self._get_question(state_name)
         if not question:
-            await message.answer("Ошибка: вопрос не найден.")
+            await message.answer()
             return
 
         if question.validator and not question.validator(text):
@@ -78,7 +77,7 @@ class BriefSurvey:
 
         question = self._get_question(state_name)
         if not question:
-            await c.answer("Ошибка: вопрос не найден.")
+            await c.answer(self.info_messages.question_not_found)
             return
 
         manager.current_context().dialog_data[question.name] = selected
@@ -90,7 +89,7 @@ class BriefSurvey:
         state_name = manager.current_context().state.state.split(":")[1]
         question = self._get_question(state_name)
         if not question:
-            await c.answer("Ошибка: вопрос не найден.")
+            await c.answer(self.info_messages.question_not_found)
             return
 
         ctx_data = manager.current_context().dialog_data
@@ -113,7 +112,7 @@ class BriefSurvey:
         state_name = manager.current_context().state.state.split(":")[1]
         question = self._get_question(state_name)
         if not question:
-            await message.answer("Ошибка: вопрос не найден.")
+            await message.answer(self.info_messages.question_not_found)
             return
 
         if message.photo:
@@ -139,7 +138,7 @@ class BriefSurvey:
         state_name = manager.current_context().state.state.split(":")[1]
         question = self._get_question(state_name)
         if not question:
-            await message.answer("Ошибка: вопрос не найден.")
+            await message.answer(self.info_messages.question_not_found)
             return
 
         if message.photo:
@@ -197,7 +196,7 @@ class BriefSurvey:
                 Button(text=Const(label), id=str(i), on_click=self._process_multi_choice_selected)
                 for i, (_, label) in enumerate(question.choices)  # type: ignore
             ]
-            confirm_btn = Button(Const("Подтвердить выбор"), id="confirm", on_click=self._confirm_multi_choice)
+            confirm_btn = Button(Const(self.buttons.multi_select_confirm), id="confirm", on_click=self._confirm_multi_choice)
             window = Window(Const(qtext), *buttons, confirm_btn, state=state)
         elif question.type in ["photo", "video", "media"]:
             # Ожидаем медиа (фото или видео)
@@ -215,7 +214,7 @@ class BriefSurvey:
                 state=state,
             )
         else:
-            raise NotImplementedError(f"Тип вопроса {question.type} не поддерживается")
+            raise QuestionNotFountError(question.type)
 
         return window
 
@@ -319,12 +318,12 @@ class BriefSurvey:
                 **kwargs: Дополнительные именованные аргументы, передаваемые в билдер вопроса.
 
             Raises:
-                MessageNotEnteredError: Если текст вопроса пустой.
+                MessageTextNotEnteredError: Если текст вопроса пустой.
 
             """
 
         if not text:
-            raise MessageNotEnteredError("Текст вопроса не может быть пустым.")
+            raise MessageTextNotEnteredError("Текст вопроса не может быть пустым.")
         if choices:
             choices = [(str(i[0]), i[1]) for i in enumerate(choices)]
         if choices and question_type=="text":
