@@ -79,9 +79,20 @@ class BriefSurvey:
         if not question:
             await c.answer(self.info_messages.question_not_found)
             return
+        # Проверяем есть ли для выбранного ответа следующий вопрос
+        next_state_name = None
+        if question.next_questions and selected in question.next_questions:
+            next_state_name = question.next_questions[selected]
+        else:
+            # переходим к следующему вопросу в порядке списка
+            idx = next((i for i, q in enumerate(self.questions) if q.name == state_name), None)
+            if idx is not None and idx + 1 < len(self.questions):
+                next_state_name = self.questions[idx + 1].name
+            else:
+                next_state_name = "finish"  # финальное состояние
 
+        await manager.switch_to(self.state_map[next_state_name])
         manager.current_context().dialog_data[question.name] = selected
-        await manager.next()
         await c.answer()
 
     async def _process_multi_choice_selected(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
@@ -300,6 +311,7 @@ class BriefSurvey:
             name: str = None,
             choices: Optional[List[str]|Tuple[str]|Set[str]] = None,
             validator: Optional[Callable[[str], bool]] = None,
+            next_questions: Optional[Dict[str, str]] = None,  # например {"Yes": "q3", "No": "q4"},
             *args,
             **kwargs
     ):
@@ -316,6 +328,7 @@ class BriefSurvey:
                 name (Optional[str], optional): Уникальное имя вопроса. Если не указано, генерируется автоматически.
                 validator (Callable): - функция валидатор для введенных данных. lambda x: bool(x.isdigit())
                 choices (Optional[List[str]], optional): Список вариантов ответа для вопросов типа "choice" и "multi_choice".
+                next_questions: (Optional[Dict[str, str]]) = None  # например {"Yes": "q3", "No": "q4"},
                 *args: Дополнительные позиционные аргументы, передаваемые в билдер вопроса.
                 **kwargs: Дополнительные именованные аргументы, передаваемые в билдер вопроса.
 
@@ -339,6 +352,7 @@ class BriefSurvey:
                                                 name=name,
                                                 choices=choices,
                                                 validator=validator,
+                                                next_questions=next_questions,
                                                 *args,
                                                 **kwargs
                                                 )
@@ -346,6 +360,8 @@ class BriefSurvey:
 
     @staticmethod
     def get_field_type_and_default(question_type: str) -> Tuple[Any, Any]:
+
+        # todo: Добавить возможность при загрузке фото и при выборе ввести просто текст
         if question_type in ("text", "choice", "multi_choice"):
             return (str, Field(default=None))
         elif question_type == "number":

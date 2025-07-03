@@ -1,4 +1,4 @@
-from typing import Optional, List, Callable
+from typing import Optional, List, Callable, Dict
 
 from brief_survey.core.models.question import QuestionBase
 from brief_survey.core.exceptions.questions import UnknownQuestionTypeError
@@ -10,8 +10,22 @@ class QuestionBuilder:
         self.question = question
 
     @staticmethod
-    def create(question_type: str, name: str, text: str, choices: Optional[List[tuple]] = None,validator:Callable=None,*args,**kwargs) -> 'QuestionBase':
+    def create(question_type: str,
+               name: str,
+               text: str,
+               choices: Optional[List[tuple]] = None,
+               validator:Callable=None,
+               next_questions: Optional[Dict[str, str]] = None,
+                *args,
+               **kwargs) -> 'QuestionBase':
         model_cls = QUESTION_TYPE_MAP.get(question_type)
         if not model_cls:
             raise UnknownQuestionTypeError
-        return model_cls(name=name, text=text, type=question_type,choices=choices,validator=validator, *args,**kwargs)
+        return model_cls(name=name,
+                         text=text,
+                         type=question_type,
+                         choices=choices,
+                         validator=validator,
+                         next_questions=next_questions,
+
+                         *args,**kwargs)

@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple, Callable, Union, Literal
+from typing import List, Optional, Tuple, Callable, Union, Literal, Dict
 from pydantic import BaseModel, field_validator
 
 from brief_survey.core.exceptions.questions import UnknownQuestionTypeError
@@ -20,6 +20,7 @@ class QuestionBase(BaseModel):
 class ChoiceQuestion(QuestionBase):
     choices: List[Tuple[str|int, str]]
     type: Literal["choice"] = "choice"
+    next_questions: Optional[Dict[str, str]] = None  # например {"Yes": "q3", "No": "q4"}
 
     @field_validator("choices")
     def check_choices_non_empty(cls, v, values):
