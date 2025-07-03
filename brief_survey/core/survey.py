@@ -42,7 +42,7 @@ def auto_switch_next_question(func):
         question = self._get_question(state_name)
 
         if question:
-
+            next_state_name =None
             selected = manager.current_context().dialog_data[question.name]
             if question.next_questions and selected in question.next_questions:
                 next_state_name = question.next_questions[selected]
