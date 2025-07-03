@@ -299,6 +299,7 @@ class BriefSurvey:
             question_type: QuestionType="text",
             name: str = None,
             choices: Optional[List[str]|Tuple[str]|Set[str]] = None,
+            validator: Optional[Callable[[str], bool]] = None,
             *args,
             **kwargs
     ):
@@ -313,6 +314,7 @@ class BriefSurvey:
                     - "choice" — выбор одного варианта,
                     - "multi_choice" — выбор нескольких вариантов.
                 name (Optional[str], optional): Уникальное имя вопроса. Если не указано, генерируется автоматически.
+                validator (Callable): - функция валидатор для введенных данных. lambda x: bool(x.isdigit())
                 choices (Optional[List[str]], optional): Список вариантов ответа для вопросов типа "choice" и "multi_choice".
                 *args: Дополнительные позиционные аргументы, передаваемые в билдер вопроса.
                 **kwargs: Дополнительные именованные аргументы, передаваемые в билдер вопроса.
@@ -336,6 +338,7 @@ class BriefSurvey:
                                                 question_type=question_type,
                                                 name=name,
                                                 choices=choices,
+                                                validator=validator,
                                                 *args,
                                                 **kwargs
                                                 )
