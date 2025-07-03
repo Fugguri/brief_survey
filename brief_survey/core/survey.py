@@ -19,6 +19,9 @@ from typing import Dict, Tuple, Any, List
 from pydantic import BaseModel, create_model, Field
 
 class BriefSurvey:
+    """
+
+    """
     def __init__(
         self,
         *,
@@ -27,10 +30,12 @@ class BriefSurvey:
         questions: Optional[List[Question]]=[],
         messages: Optional[Dict[str, str]] = None,
         states_prefix: str = "SurveyStates",
+        start_command:str = "start_survey",
     ):
         self.questions = questions
         self.save_handler = save_handler
         self.result_model = result_model
+        self.command_start= start_command
         self.messages = {
             "invalid_input": "Пожалуйста, введите корректные данные.",
             "save_success": "Спасибо! Данные успешно сохранены.",
@@ -130,8 +135,8 @@ class BriefSurvey:
         media_list.append(file_id)
         ctx_data[question.name] = media_list
 
-        await message.answer(f"Файл добавлен. Отправьте ещё или нажмите 'Готово'.")
-
+        await manager.next()
+        return
     async def _confirm_multi_choice(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         ctx_data = manager.current_context().dialog_data
 
@@ -231,8 +236,9 @@ class BriefSurvey:
 
 
     def register_handlers(self, dp: Dispatcher,
-                          command_start: str = "start_survey",
+                          command_start: str = None,
                           callback_data:str=None,
+
                           text:str=None,
                           ):
         if not self.questions:
@@ -241,8 +247,10 @@ class BriefSurvey:
             self.create_result_model_from_questions()
         if command_start:
             dp.message.register(self.cmd_start_survey_handler, Command(command_start))
+        else:
+            dp.message.register(self.cmd_start_survey_handler, Command(self.command_start))
         if callback_data:
-            dp.callback_query.register(self.cmd_start_survey_handler, F.data == 'fill_in_profile')
+            dp.callback_query.register(self.cmd_start_survey_handler, F.data == callback_data)
         if text:
             dp.message.register(self.cmd_start_survey_handler, F.text == text)
         self.States, self.state_map = self._create_states_group(
@@ -295,7 +303,7 @@ class BriefSurvey:
         if not text:
             raise MessageNotEnteredError("Текст вопроса не может быть пустым.")
         if choices:
-            choices = [(str(i[0]) , i[1]) for i in enumerate(choices)]
+            choices = [(str(i[0]), i[1]) for i in enumerate(choices)]
         if choices and question_type=="text":
             question_type = 'choice'
         if not name:

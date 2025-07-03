@@ -1,8 +1,8 @@
 # 🇺🇸 English
 
-# BriefSurvey
+## BriefSurvey
 Universal Dynamic Survey for Telegram Bots with `aiogram` version 3 `aiogram_dialog` and Pydantic
-## Description
+### Description
 BriefSurvey is a module for quick and flexible creation of dialog-based surveys in Telegram using aiogram v3 and aiogram_dialog.
 
 - Questions are defined using Pydantic models to enforce strong typing and validation.
@@ -12,13 +12,13 @@ BriefSurvey is a module for quick and flexible creation of dialog-based surveys 
 - Simple integration and handler registration.
 
 ---
-# Installation
-## From GitHub Repository
+## Installation
+### From GitHub Repository
 
 ```bash
 pip install git+https://github.com/Fugguri/brief_survey.git 
 ```
-## Download Locally and Install
+### Download Locally and Install
 
 ```bash
 git clone https://github.com/Fugguri/brief_survey.git
@@ -58,7 +58,7 @@ questions = [
 ]
 
 ```
-# 2. Define a result model:
+### 2. Define a result model:
 ``` python
 from pydantic import BaseModel
 from typing import Optional
@@ -68,14 +68,14 @@ class SurveyResult(BaseModel):
     gender: Optional[str]
     profession: Optional[list[str]]
 ```
-# 3. Create a function to save results:
+### 3. Create a function to save results:
 ``` python
 async def save_handler(user_id: int, result: SurveyResult):
     # Save logic, e.g., store in database
     print(f"User {user_id} survey result: {result}")
 
 ```
-# 4. Initialize and register the survey:
+### 4. Initialize and register the survey:
 ``` python
 from brief_survey import BriefSurvey
 
@@ -93,10 +93,10 @@ survey.register_handlers(
     callback_data="start_survey"       # optional
 )
 ```
-# 5. Launch the survey in Telegram with the command:
+### 5. Launch the survey in Telegram with the command:
  /start_survey
 
-# Important
+## Important
 If you have global handlers in your bot, filter states explicitly using StateFilter to avoid conflicts that can break the survey after the first message:
 ``` python
 from aiogram.filters import StateFilter
@@ -107,7 +107,7 @@ dp.callback_query.register(handle_callback, StateFilter(None))
 
 # 🇷🇺 Русский
 
-# BriefSurvey
+## BriefSurvey
 
 Универсальный динамический опросник для Telegram-ботов на базе `aiogram_dialog` с поддержкой Pydantic-моделей вопросов и результатов.
 
@@ -125,12 +125,12 @@ BriefSurvey — это модуль для быстрой и гибкой реа
 
 ---
 
-# Установка
-## Github Repo
+## Установка
+### Github Repo
 ```bash
 pip install git+https://github.com/Fugguri/brief_survey.git 
 ```
-## Скачать локально и установить
+### Скачать локально и установить
 ```bash
 git clone https://github.com/Fugguri/brief_survey.git
 pip install -e brief_survey 
@@ -170,7 +170,7 @@ questions = [
 
 
 ```
-# 2. Определите модель результата:
+### 2. Определите модель результата:
 ``` python
 from pydantic import BaseModel
 from typing import Optional
@@ -180,13 +180,13 @@ class SurveyResult(BaseModel):
     name: Optional[str]
     gender: Optional[str]
 ```
-# 3. Создайте функцию для сохранения результатов:
+### 3. Создайте функцию для сохранения результатов:
 ```python
 async def save_handler(user_id: int, result: SurveyResult):
     # Логика сохранения, например, в базу
     print(f"Результат опроса пользователя {user_id}: {result}")
 ```
-# 4. Инициализируйте и зарегистрируйте опросник:
+### 4. Инициализируйте и зарегистрируйте опросник:
 ``` python
 from brief_survey import BriefSurvey
 
@@ -203,10 +203,10 @@ survey.register_handlers(dp=dp,
                          callback_data="start_survey" #опционально
                          )
 ```
-# 5.Запускайте команду в Telegram:
+### 5.Запускайте команду в Telegram:
 /start_survey
 
-# Важно.
+## Важно.
 Если у вас есть глобальный handler, фильтруйте state вручную, при помощи StateFilter.Неясные конфликты и после первого сообщения опросник перестает работать.
 
 ``` python
