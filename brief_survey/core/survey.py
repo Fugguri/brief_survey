@@ -5,6 +5,7 @@ from aiogram.enums import ContentType
 from pydantic import BaseModel, ValidationError, Field
 from aiogram import types, Dispatcher, F
 from aiogram.fsm.context import FSMContext
+from aiogram_dialog.manager.manager import ManagerImpl
 from aiogram_dialog import Dialog, DialogManager, Window, StartMode, setup_dialogs
 from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.text import Const
@@ -30,16 +31,10 @@ def auto_switch_next_question(func):
     @wraps(func)
     async def wrapper(self, *args, **kwargs):
         result = await func(self, *args, **kwargs)
-
-        # Получаем менеджер из аргументов
-        manager = None
+        manager = kwargs.get("manager", None)
         for arg in args:
-            if isinstance(arg, DialogManager): #type: ignore
-                manager = arg
-                break
-        if not manager and 'manager' in kwargs:
-            manager = kwargs['manager']
-
+            if isinstance(arg,ManagerImpl):
+                manager =arg
         if not manager:
             return result
 
@@ -51,10 +46,10 @@ def auto_switch_next_question(func):
             selected = manager.current_context().dialog_data[question.name]
             if question.next_questions and selected in question.next_questions:
                 next_state_name = question.next_questions[selected]
-                await manager.switch_to(next_state_name)
             elif question.next_question:
-                next_state_name=self.state_map[question.next_question]
-                await manager.switch_to(next_state_name)
+                next_state_name=question.next_question
+            if next_state_name:
+                await manager.switch_to(self.state_map[next_state_name])
             else:
                 await manager.next()
 
@@ -116,6 +111,7 @@ class BriefSurvey:
     @auto_switch_next_question
     async def _process_choice_selected(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         # selected = widget.widget_id
+        print(widget)
         selected = widget.text.text  # Получаем текст кнопки, а не id (callback_data)
         state_name = manager.current_context().state.state.split(":")[1]
 
