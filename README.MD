@@ -27,7 +27,77 @@ pip install -e brief_survey
 
 
 ## Quick Start
-### 1. Define your questions using Pydantic models:
+### (case 1) Dynamic crate a brief 
+```python
+from brief_survey import BriefSurvey
+
+async def save_handler(user_id: int, result: any):
+    # dynamic access to survey result fields by question name.
+    name = result.name
+    age = result.age
+    gender = result.gender
+
+    return
+
+survey = BriefSurvey(
+    save_handler=save_handler,
+    start_command='start_brief'  # customizable start command for the survey
+)
+
+# Customizable error messages
+survey.info_messages.invalid_input = "Invalid data received, please try again."
+# Customizable button text at the end of the survey
+survey.buttons.finish_text = "Finish survey"
+
+survey.add_question(
+    text="What is your name?",
+    question_type="text",
+    name="name",
+    media_path='storage/media/img.png'  # you can send media with text for any question (optional)
+)
+
+survey.add_question(
+    text="Your age?",
+    question_type="number",
+    name="age",
+    validator=lambda x: x.isdigit() and 0 < int(x) < 120
+)
+
+survey.add_question(
+    text="Select your gender",
+    question_type="choice",
+    name="gender",
+    choices=["Male", "Female"],
+    next_questions={
+        'Male': "favorite_car",
+        'Female': "favorite_color",
+    }
+)
+
+survey.add_question(
+    text="Favorite car brand?",
+    question_type="choice",
+    name="favorite_car",
+    choices=["MBW", "Mercedes"],
+    next_question='photo'  # mandatory parameter for queries depending on choice. If not set, proceeds to next survey question
+)
+
+survey.add_question(
+    text="Favorite color?",
+    question_type="choice",
+    name="favorite_color",
+    choices=["White", "Pink", "Black"],
+    next_question='photo'  # mandatory parameter for queries depending on choice. If not set, proceeds to next survey question
+)
+
+survey.add_question(
+    text="Upload your photo",
+    question_type="photo",
+    name="photo"
+)
+
+```
+### (case 2) 1. Define your questions using Pydantic models:
 
 ```python
 from brief_survey import QuestionBase, ChoiceQuestion, MultiChoiceQuestion
@@ -96,6 +166,8 @@ survey.register_handlers(
 ### 5. Launch the survey in Telegram with the command:
  /start_survey
 
+
+
 ## Important
 If you have global handlers in your bot, filter states explicitly using StateFilter to avoid conflicts that can break the survey after the first message:
 ``` python
@@ -138,7 +210,77 @@ pip install -e brief_survey
 
 
 ## Быстрый старт
-### 1. Определите вопросы (используйте модели из основного модуля):
+### (1 вариант) Динамическое добавление вопросов
+```python
+
+from brief_survey import BriefSurvey
+async def save_handler(user_id: int, result: any):
+    #динамическое обращение к полям результата опроса по имени вопроса. 
+    name = result.mame
+    age = result.age
+    gender = result.gender 
+    return 
+survey = BriefSurvey(
+    save_handler=save_handler,
+    start_command='start_brief' # Можно настраивать команду начала опроса
+)
+
+#Можно настраивать сообщения об ошибках
+survey.info_messages.invalid_input = "Получены неверные данные, попробуйте еще раз"
+
+#Можно настраивать сообщени и кнопку в конце опроса
+survey.info_messages.invalid_input = "Получены неверные данные, попробуйте еще раз"
+survey.buttons.finish_text = "Завершить опрос" 
+
+survey.add_question(
+    text="Как вас зовут?",
+    question_type="text",
+    name="name",
+    media_path='storage/media/img.png'# Можете отправлять фотографии вместе с вопросом
+)
+survey.add_question(
+    text="Ваш возраст?",
+    question_type="number",
+    name="age",
+    validator=lambda x: x.isdigit() and 0 < int(x) < 120
+)
+survey.add_question(
+    text="Выберите пол",
+    question_type="choice",
+    name="gender",
+    choices=["Мужской", "Женский"],
+    
+    next_questions={
+    'Мужской': "favorite_car",
+    'Женский': "favorite_color",
+    }
+)
+survey.add_question(
+    text="Любимая марка автомобиля?",
+    question_type="choice",
+    name="favorite_car",
+    choices=["MBW", "Mercedes"],
+    next_question='photo' # Обязательный параметр для вариантов зависящих от выбора. Если не указать, пойдет дальше по опросу
+
+)
+survey.add_question(
+    text="Любимый цвет?",
+    question_type="choice",
+    name="favorite_car",
+    choices=["Белый", "Розовый", "Черный"],
+    next_question='photo' # Обязательный параметр для вариантов зависящих от выбора. Если не указать, пойдет дальше по опросу
+)
+
+survey.add_question(
+    text="Загрузите ваше фото",
+    question_type="photo",
+    name="photo"
+)
+
+````
+
+### (2 вариант) 
+1. Определите вопросы (используйте модели из основного модуля):
 
 ```python
 from brief_survey import QuestionBase, ChoiceQuestion, MultiChoiceQuestion
@@ -182,6 +324,7 @@ class SurveyResult(BaseModel):
 ```
 ### 3. Создайте функцию для сохранения результатов:
 ```python
+
 async def save_handler(user_id: int, result: SurveyResult):
     # Логика сохранения, например, в базу
     print(f"Результат опроса пользователя {user_id}: {result}")
@@ -217,4 +360,7 @@ dp.callback_query.register(handle_callback,StateFilter(None))
 
 
 # ToDo
-- Добавить обработку фото и видео или медиа списка 
+- Добавить обработку медиа списка
+
+# for any errors send me a telegram message to @fugguri.
+# ☕️bye me a coffe appreciated 

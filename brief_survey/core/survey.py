@@ -60,8 +60,20 @@ def auto_switch_next_question(func):
 
 class BriefSurvey:
     """
+        Универсальный динамический опросник для Telegram-ботов на базе aiogram_dialog.
 
-    """
+        Позволяет быстро создавать диалоговые опросы с любым числом вопросов и разными типами ответов.
+        Вопросы можно добавлять как при инициализации, так и динамически через метод `add_question`.
+
+        Атрибуты:
+            questions (List[Question]): Список вопросов опроса.
+            save_handler (Callable): Асинхронная функция для сохранения результата опроса.
+            result_model (BaseModel): Pydantic-модель для итоговых данных.
+            command_start (str): Команда для запуска опроса.
+            info_messages (InfoMessages): Сообщения для пользователя (ошибки, подсказки).
+            buttons (InfoButtons): Тексты кнопок для управления опросом.
+            states_prefix (str): Префикс для состояний FSM.
+        """
 
     def __init__(
             self,
@@ -72,6 +84,16 @@ class BriefSurvey:
             states_prefix: str = "SurveyStates",
             start_command: str = "start_survey",
     ):
+        """
+               Инициализация опросника.
+
+               Args:
+                   save_handler: Асинхронная функция для сохранения результата (user_id, result).
+                   result_model: Pydantic-модель результата (опционально, может быть создана автоматически).
+                   questions: Список вопросов (можно добавить позже через add_question).
+                   states_prefix: Префикс для состояний FSM.
+                   start_command: Команда для запуска опроса в Telegram.
+               """
         self.questions = questions
         self.save_handler = save_handler
         self.result_model = result_model
@@ -318,6 +340,15 @@ class BriefSurvey:
                           callback_data: str = None,
                           text: str = None,
                           ):
+        """
+        Регистрирует все необходимые хендлеры для запуска и работы опроса в Telegram-боте.
+
+        Args:
+            dp (Dispatcher): Диспетчер aiogram.
+            command_start (str, optional): Команда для запуска опроса.
+            callback_data (str, optional): Callback data для запуска опроса по кнопке.
+            text (str, optional): Текст сообщения для запуска опроса.
+        """
         if not self.questions:
             raise NoQuestionsEnteredError
         else:
@@ -363,26 +394,31 @@ class BriefSurvey:
             **kwargs
     ):
         """
-            Добавляет новый вопрос в конец опроса.
+               Добавляет новый вопрос в опросник.
 
-            Args:
-                text (str): Текст вопроса. Не может быть пустым.
-                question_type (Literal["text", "number", "choice", "multi_choice","photo", "video", "media"]): Тип вопроса.
-                    - "text" — текстовый вопрос,
-                    - "number" — числовой вопрос,
-                    - "choice" — выбор одного варианта,
-                    - "multi_choice" — выбор нескольких вариантов.
-                name (Optional[str], optional): Уникальное имя вопроса. Если не указано, генерируется автоматически.
-                validator (Callable): - функция валидатор для введенных данных. lambda x: bool(x.isdigit())
-                choices (Optional[List[str]], optional): Список вариантов ответа для вопросов типа "choice" и "multi_choice".
-                next_questions: (Optional[Dict[str, str]]) = None  # например {"Yes": "q3", "No": "q4"},
-                *args: Дополнительные позиционные аргументы, передаваемые в билдер вопроса.
-                **kwargs: Дополнительные именованные аргументы, передаваемые в билдер вопроса.
+               Args:
+                   text (str): Текст вопроса (обязателен).
+                   question_type (str): Тип вопроса: "text", "number", "choice", "multi_choice", "photo", "video", "media".
+                   name (str, optional): Уникальное имя вопроса (если не указано — генерируется автоматически).
+                   choices (list, optional): Список вариантов для "choice" и "multi_choice".
+                   validator (Callable, optional): Функция-валидатор для ответа.
+                   next_questions (dict, optional): Словарь переходов к следующим вопросам по ответу.
+                   next_question (str, optional): Имя следующего вопроса (для линейного перехода).
+                   media_path (str, optional): Путь к медиафайлу (картинка, видео).
+                   *args: Дополнительные позиционные аргументы.
+                   **kwargs: Дополнительные именованные аргументы.
 
-            Raises:
-                MessageTextNotEnteredError: Если текст вопроса пустой.
+               Raises:
+                   MessageTextNotEnteredError: Если текст вопроса пустой.
 
-            """
+               Пример:
+                   survey.add_question(
+                       text="Ваш возраст?",
+                       question_type="number",
+                       name="age",
+                       validator=lambda x: x.isdigit() and 0 < int(x) < 120
+                   )
+               """
 
         if not text:
             raise MessageTextNotEnteredError("Текст вопроса не может быть пустым.")
@@ -423,14 +459,11 @@ class BriefSurvey:
 
     def create_result_model_from_questions(self) -> BaseModel:
         """
-        Создаёт динамическую Pydantic-модель результата на основе списка вопросов.
+                Автоматически создает Pydantic-модель результата на основе списка вопросов.
 
-        Args:
-            questions (List): Список объектов вопросов, у каждого должен быть атрибут name и type.
-
-        Returns:
-            BaseModel: Класс модели результата.
-        """
+                Returns:
+                    BaseModel: Класс модели результата для сериализации итоговых данных пользователя.
+                """
         fields: Dict[str, Tuple[Any, Any]] = {}
 
         for q in self.questions:
