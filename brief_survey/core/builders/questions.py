@@ -17,6 +17,7 @@ class QuestionBuilder:
                validator:Callable=None,
                next_questions: Optional[Dict[str, str]] = None,
                next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
+               media: Optional[str] = None,
                *args,
                **kwargs) -> 'QuestionBase':
         model_cls = QUESTION_TYPE_MAP.get(question_type)
@@ -29,4 +30,7 @@ class QuestionBuilder:
                          validator=validator,
                          next_questions=next_questions,
                          next_question=next_question,
-        *args,**kwargs)
+                         media=media,
+                         *args,
+                         **kwargs
+                         )

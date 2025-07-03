@@ -8,6 +8,7 @@ from aiogram_dialog import Dialog, DialogManager, Window, StartMode, setup_dialo
 from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.text import Const
 from aiogram_dialog.widgets.input import MessageInput
+from aiogram_dialog.widgets.media import StaticMedia
 from aiogram.filters import Command
 from aiogram.fsm.state import StatesGroup, State
 
@@ -20,25 +21,27 @@ from .models.question import Question, QuestionType
 from typing import Dict, Tuple, Any, List
 from pydantic import BaseModel, create_model, Field
 
+
 class BriefSurvey:
     """
 
     """
+
     def __init__(
-        self,
-        *,
-        save_handler: Callable[[int, Any], Any],
-        result_model: BaseModel = None,
-        questions: Optional[List[Question]]=[],
-        states_prefix: str = "SurveyStates",
-        start_command:str = "start_survey",
+            self,
+            *,
+            save_handler: Callable[[int, Any], Any],
+            result_model: BaseModel = None,
+            questions: Optional[List[Question]] = [],
+            states_prefix: str = "SurveyStates",
+            start_command: str = "start_survey",
     ):
         self.questions = questions
         self.save_handler = save_handler
         self.result_model = result_model
-        self.command_start= start_command
-        self.info_messages:InfoMessages = InfoMessages()
-        self.buttons:InfoButtons = InfoButtons()
+        self.command_start = start_command
+        self.info_messages: InfoMessages = InfoMessages()
+        self.buttons: InfoButtons = InfoButtons()
         self.states_prefix = states_prefix
         self._dialog = None
 
@@ -72,6 +75,7 @@ class BriefSurvey:
             await manager.switch_to(self.state_map[question.next_question])
         else:
             await manager.next()
+
     async def _process_choice_selected(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         # selected = widget.widget_id
         selected = widget.text.text  # Получаем текст кнопки, а не id (callback_data)
@@ -125,6 +129,7 @@ class BriefSurvey:
             await manager.switch_to(self.state_map[question.next_question])
         else:
             await manager.next()
+
     async def _process_media_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
         state_name = manager.current_context().state.state.split(":")[1]
         question = self._get_question(state_name)
@@ -180,7 +185,6 @@ class BriefSurvey:
             await manager.next()
         return
 
-
     async def _confirm_multi_choice(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         ctx_data = manager.current_context().dialog_data
 
@@ -204,27 +208,32 @@ class BriefSurvey:
         state = self.state_map[question.name]
         qtext = question.text
 
+        # Базовые элементы окна
+        elements = []
+        if qtext:
+            elements.append(Const(qtext))
+        if question.media:
+            elements.append(StaticMedia(path=question.media))
+
+        # Обработка по типу вопроса
         if question.type in ["text", "number"]:
-            window = Window(
-                Const(qtext),
-                MessageInput(self._process_text_input),
-                state=state,
-            )
+            elements.append(MessageInput(self._process_text_input))
         elif question.type == "choice":
             buttons = [
                 Button(text=Const(label), id=key, on_click=self._process_choice_selected)
                 for key, label in question.choices  # type: ignore
             ]
-            window = Window(Const(qtext), *buttons, state=state)
+            elements.extend(buttons)
         elif question.type == "multi_choice":
             buttons = [
                 Button(text=Const(label), id=str(i), on_click=self._process_multi_choice_selected)
                 for i, (_, label) in enumerate(question.choices)  # type: ignore
             ]
-            confirm_btn = Button(Const(self.buttons.multi_select_confirm), id="confirm", on_click=self._confirm_multi_choice)
-            window = Window(Const(qtext), *buttons, confirm_btn, state=state)
+            confirm_btn = Button(Const(self.buttons.multi_select_confirm), id="confirm",
+                                 on_click=self._confirm_multi_choice)
+            elements.extend(buttons)
+            elements.append(confirm_btn)
         elif question.type in ["photo", "video", "media"]:
-            # Ожидаем медиа (фото или видео)
             allowed_types = []
             if question.type == "photo":
                 allowed_types = [ContentType.PHOTO]
@@ -232,16 +241,11 @@ class BriefSurvey:
                 allowed_types = [ContentType.VIDEO]
             else:
                 allowed_types = [ContentType.PHOTO, ContentType.VIDEO]
-
-            window = Window(
-                Const(qtext),
-                MessageInput(self._process_media_input, content_types=allowed_types),
-                state=state,
-            )
+            elements.append(MessageInput(self._process_media_input, content_types=allowed_types))
         else:
             raise QuestionNotFountError(question.type)
 
-        return window
+        return Window(*elements, state=state)
 
     async def _on_finish(self, c: types.CallbackQuery, button, manager: DialogManager):
         data = manager.current_context().dialog_data
@@ -272,7 +276,7 @@ class BriefSurvey:
             await state.set_state(self.state_map[first_state_name])
             await dialog_manager.start(self.state_map[first_state_name], mode=StartMode.RESET_STACK)
         else:
-            await message.answer("Нет вопросов для опроса.")
+            await message.answer("Извините, еще нет вопросов для опроса.")
 
     async def cmd_start_survey_handler(
             self,
@@ -282,12 +286,10 @@ class BriefSurvey:
     ):
         await self.start(message, dialog_manager, state)
 
-
     def register_handlers(self, dp: Dispatcher,
                           command_start: str = None,
-                          callback_data:str=None,
-
-                          text:str=None,
+                          callback_data: str = None,
+                          text: str = None,
                           ):
         if not self.questions:
             raise NoQuestionsEnteredError
@@ -310,6 +312,7 @@ class BriefSurvey:
         self.windows.append(
             Window(
                 Const(self.info_messages.finish_text),
+
                 Button(Const(self.buttons.finish_text), id="finish", on_click=self._on_finish),
                 state=self.state_map["finish"],
             )
@@ -322,12 +325,13 @@ class BriefSurvey:
     def add_question(
             self,
             text: str,
-            question_type: QuestionType="text",
+            question_type: QuestionType = "text",
             name: str = None,
-            choices: Optional[List[str]|Tuple[str]|Set[str]] = None,
+            choices: Optional[List[str] | Tuple[str] | Set[str]] = None,
             validator: Optional[Callable[[str], bool]] = None,
             next_questions: Optional[Dict[str, str]] = None,  # например {"Yes": "q3", "No": "q4"},
             next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
+            media_path: Optional[str] = None,
             *args,
             **kwargs
     ):
@@ -357,28 +361,28 @@ class BriefSurvey:
             raise MessageTextNotEnteredError("Текст вопроса не может быть пустым.")
         if choices:
             choices = [(str(i[0]), i[1]) for i in enumerate(choices)]
-        if choices and question_type=="text":
+        if choices and question_type == "text":
             question_type = 'choice'
         if not name:
             name = f"q{len(self.questions) + 1}"
 
         question_model = QuestionBuilder.create(
-                                                text=text,
-                                                question_type=question_type,
-                                                name=name,
-                                                choices=choices,
-                                                validator=validator,
-                                                next_questions=next_questions,
-                                                next_question=next_question,
-                                                *args,
-                                                **kwargs
-                                                )
+            text=text,
+            question_type=question_type,
+            name=name,
+            choices=choices,
+            validator=validator,
+            next_questions=next_questions,
+            next_question=next_question,
+            media=media,
+            *args,
+            **kwargs
+        )
         self.questions.append(question_model)
 
     @staticmethod
     def get_field_type_and_default(question_type: str) -> Tuple[Any, Any]:
 
-        # todo: Добавить возможность при загрузке фото и при выборе ввести просто текст
         if question_type in ("text", "choice", "multi_choice"):
             return (str, Field(default=None))
         elif question_type == "number":
