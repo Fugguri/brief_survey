@@ -9,6 +9,7 @@ class QuestionBase(BaseModel):
     text: str
     type: QuestionType
     validator: Optional[Callable[[str], bool]] = None
+    next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
 
     @field_validator('type')
     def type_must_be_known(cls, v):

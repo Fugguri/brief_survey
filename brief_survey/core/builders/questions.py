@@ -16,7 +16,8 @@ class QuestionBuilder:
                choices: Optional[List[tuple]] = None,
                validator:Callable=None,
                next_questions: Optional[Dict[str, str]] = None,
-                *args,
+               next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
+               *args,
                **kwargs) -> 'QuestionBase':
         model_cls = QUESTION_TYPE_MAP.get(question_type)
         if not model_cls:
@@ -27,5 +28,5 @@ class QuestionBuilder:
                          choices=choices,
                          validator=validator,
                          next_questions=next_questions,
-
-                         *args,**kwargs)
+                         next_question=next_question,
+        *args,**kwargs)

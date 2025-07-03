@@ -57,7 +57,7 @@ class BriefSurvey:
         state_name = manager.current_context().state.state.split(":")[1]
         question = self._get_question(state_name)
         if not question:
-            await message.answer()
+            await message.answer(self.info_messages.question_not_found)
             return
 
         if question.validator and not question.validator(text):
@@ -68,8 +68,10 @@ class BriefSurvey:
             text = text.replace(",", ".")
 
         manager.current_context().dialog_data[question.name] = text
-        await manager.next()
-
+        if question.next_question:
+            await manager.switch_to(self.state_map[question.next_question])
+        else:
+            await manager.next()
     async def _process_choice_selected(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         # selected = widget.widget_id
         selected = widget.text.text  # Получаем текст кнопки, а не id (callback_data)
@@ -83,6 +85,8 @@ class BriefSurvey:
         next_state_name = None
         if question.next_questions and selected in question.next_questions:
             next_state_name = question.next_questions[selected]
+        elif question.next_question:
+            next_state_name = question.next_question
         else:
             # переходим к следующему вопросу в порядке списка
             idx = next((i for i, q in enumerate(self.questions) if q.name == state_name), None)
@@ -117,8 +121,10 @@ class BriefSurvey:
         ctx_data[question.name] = ", ".join(multi_selected)
 
         await c.answer(f"Выбрано: {', '.join(multi_selected) if multi_selected else 'ничего'}")
-        await manager.show()
-
+        if question.next_question:
+            await manager.switch_to(self.state_map[question.next_question])
+        else:
+            await manager.next()
     async def _process_media_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
         state_name = manager.current_context().state.state.split(":")[1]
         question = self._get_question(state_name)
@@ -133,7 +139,6 @@ class BriefSurvey:
         else:
             await message.answer(self.info_messages.invalid_input)
             return
-        print(message.photo)
         ctx_data = manager.current_context().dialog_data
         media_list = ctx_data.get(question.name, None)
         # if not isinstance(media_list, list):
@@ -142,7 +147,10 @@ class BriefSurvey:
 
         ctx_data[question.name] = file_id
 
-        await manager.next()
+        if question.next_question:
+            await manager.switch_to(self.state_map[question.next_question])
+        else:
+            await manager.next()
         return
 
     async def _process_media_list_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
@@ -166,9 +174,12 @@ class BriefSurvey:
         #     media_list = [media_list]
         media_list.append(file_id)
         ctx_data[question.name] = media_list
-
-        await manager.next()
+        if question.next_question:
+            await manager.switch_to(self.state_map[question.next_question])
+        else:
+            await manager.next()
         return
+
 
     async def _confirm_multi_choice(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         ctx_data = manager.current_context().dialog_data
@@ -177,7 +188,10 @@ class BriefSurvey:
         multi_selected = ctx_data.get(f"multi_selected_{state_name}", set())
         question = self._get_question(state_name)
         ctx_data[question.name] = ", ".join(multi_selected)
-        await manager.next()
+        if question.next_question:
+            await manager.switch_to(self.state_map[question.next_question])
+        else:
+            await manager.next()
         await c.answer()
 
     def _get_question(self, name: str) -> Optional[Question]:
@@ -250,6 +264,7 @@ class BriefSurvey:
         finally:
             await c.message.delete()
             await manager.done()
+            await c.answer()
 
     async def start(self, message: types.Message, dialog_manager: DialogManager, state: FSMContext):
         first_state_name = self.questions[0].name if self.questions else None
@@ -312,6 +327,7 @@ class BriefSurvey:
             choices: Optional[List[str]|Tuple[str]|Set[str]] = None,
             validator: Optional[Callable[[str], bool]] = None,
             next_questions: Optional[Dict[str, str]] = None,  # например {"Yes": "q3", "No": "q4"},
+            next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
             *args,
             **kwargs
     ):
@@ -353,6 +369,7 @@ class BriefSurvey:
                                                 choices=choices,
                                                 validator=validator,
                                                 next_questions=next_questions,
+                                                next_question=next_question,
                                                 *args,
                                                 **kwargs
                                                 )
@@ -367,7 +384,7 @@ class BriefSurvey:
         elif question_type == "number":
             return (float, Field(default=None))
         elif question_type in ("photo", "video"):
-            return (Optional[str], Field(default_factory=None))
+            return (Optional[str], Field(default=None))
         elif question_type in ("media"):
             return (Optional[List[str]], Field(default_factory=list))
         else:
