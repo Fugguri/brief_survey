@@ -1,3 +1,4 @@
+from functools import wraps
 from typing import List, Optional, Callable, Any, Dict, Union, Literal, Tuple, Set
 
 from aiogram.enums import ContentType
@@ -20,6 +21,46 @@ from .models.question import Question, QuestionType
 
 from typing import Dict, Tuple, Any, List
 from pydantic import BaseModel, create_model, Field
+
+def auto_switch_next_question(func):
+    """
+    Декоратор для методов класса, который после выполнения
+    переключит состояние в диалоге, используя self из метода.
+    """
+    @wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        result = await func(self, *args, **kwargs)
+
+        # Получаем менеджер из аргументов
+        manager = None
+        for arg in args:
+            if isinstance(arg, DialogManager): #type: ignore
+                manager = arg
+                break
+        if not manager and 'manager' in kwargs:
+            manager = kwargs['manager']
+
+        if not manager:
+            return result
+
+        state_name = manager.current_context().state.state.split(":")[1]
+        question = self._get_question(state_name)
+
+        if question:
+
+            selected = manager.current_context().dialog_data[question.name]
+            if question.next_questions and selected in question.next_questions:
+                next_state_name = question.next_questions[selected]
+                await manager.switch_to(next_state_name)
+            elif question.next_question:
+                next_state_name=self.state_map[question.next_question]
+                await manager.switch_to(next_state_name)
+            else:
+                await manager.next()
+
+        return result
+
+    return wrapper
 
 
 class BriefSurvey:
@@ -54,7 +95,7 @@ class BriefSurvey:
 
     def get_dialog(self) -> Dialog:
         return self._dialog
-
+    @auto_switch_next_question
     async def _process_text_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
         text = message.text.strip()
         state_name = manager.current_context().state.state.split(":")[1]
@@ -71,11 +112,8 @@ class BriefSurvey:
             text = text.replace(",", ".")
 
         manager.current_context().dialog_data[question.name] = text
-        if question.next_question:
-            await manager.switch_to(self.state_map[question.next_question])
-        else:
-            await manager.next()
 
+    @auto_switch_next_question
     async def _process_choice_selected(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         # selected = widget.widget_id
         selected = widget.text.text  # Получаем текст кнопки, а не id (callback_data)
@@ -86,23 +124,24 @@ class BriefSurvey:
             await c.answer(self.info_messages.question_not_found)
             return
         # Проверяем есть ли для выбранного ответа следующий вопрос
-        next_state_name = None
-        if question.next_questions and selected in question.next_questions:
-            next_state_name = question.next_questions[selected]
-        elif question.next_question:
-            next_state_name = question.next_question
-        else:
-            # переходим к следующему вопросу в порядке списка
-            idx = next((i for i, q in enumerate(self.questions) if q.name == state_name), None)
-            if idx is not None and idx + 1 < len(self.questions):
-                next_state_name = self.questions[idx + 1].name
-            else:
-                next_state_name = "finish"  # финальное состояние
+        # next_state_name = None
+        # if question.next_questions and selected in question.next_questions:
+        #     next_state_name = question.next_questions[selected]
+        # elif question.next_question:
+        #     next_state_name = question.next_question
+        # else:
+        #     # переходим к следующему вопросу в порядке списка
+        #     idx = next((i for i, q in enumerate(self.questions) if q.name == state_name), None)
+        #     if idx is not None and idx + 1 < len(self.questions):
+        #         next_state_name = self.questions[idx + 1].name
+        #     else:
+        #         next_state_name = "finish"
 
-        await manager.switch_to(self.state_map[next_state_name])
         manager.current_context().dialog_data[question.name] = selected
         await c.answer()
+        # await manager.switch_to(self.state_map[next_state_name])
 
+    @auto_switch_next_question
     async def _process_multi_choice_selected(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         selected_text = widget.text.text
         state_name = manager.current_context().state.state.split(":")[1]
@@ -125,11 +164,8 @@ class BriefSurvey:
         ctx_data[question.name] = ", ".join(multi_selected)
 
         await c.answer(f"Выбрано: {', '.join(multi_selected) if multi_selected else 'ничего'}")
-        if question.next_question:
-            await manager.switch_to(self.state_map[question.next_question])
-        else:
-            await manager.next()
 
+    @auto_switch_next_question
     async def _process_media_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
         state_name = manager.current_context().state.state.split(":")[1]
         question = self._get_question(state_name)
@@ -152,12 +188,8 @@ class BriefSurvey:
 
         ctx_data[question.name] = file_id
 
-        if question.next_question:
-            await manager.switch_to(self.state_map[question.next_question])
-        else:
-            await manager.next()
-        return
 
+    @auto_switch_next_question
     async def _process_media_list_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
         state_name = manager.current_context().state.state.split(":")[1]
         question = self._get_question(state_name)
@@ -185,6 +217,7 @@ class BriefSurvey:
             await manager.next()
         return
 
+    @auto_switch_next_question
     async def _confirm_multi_choice(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         ctx_data = manager.current_context().dialog_data
 
@@ -192,11 +225,9 @@ class BriefSurvey:
         multi_selected = ctx_data.get(f"multi_selected_{state_name}", set())
         question = self._get_question(state_name)
         ctx_data[question.name] = ", ".join(multi_selected)
-        if question.next_question:
-            await manager.switch_to(self.state_map[question.next_question])
-        else:
-            await manager.next()
         await c.answer()
+
+
 
     def _get_question(self, name: str) -> Optional[Question]:
         for q in self.questions:
@@ -374,7 +405,7 @@ class BriefSurvey:
             validator=validator,
             next_questions=next_questions,
             next_question=next_question,
-            media=media,
+            media=media_path,
             *args,
             **kwargs
         )
@@ -415,3 +446,5 @@ class BriefSurvey:
         else:
             DynamicResultModel = create_model('DynamicResultModel', **fields)
             return DynamicResultModel
+
+
