@@ -1,8 +1,8 @@
 from typing import Optional, List
 
-from brief_survey.core.models import QuestionBase
+from brief_survey.core.models.question import QuestionBase
 from brief_survey.core.exceptions.questions import UnknownQuestionTypeError
-from brief_survey.core.models import QUESTION_TYPE_MAP
+from brief_survey.core.models.question import QUESTION_TYPE_MAP
 
 
 class QuestionBuilder:

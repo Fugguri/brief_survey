@@ -13,7 +13,9 @@ from aiogram.fsm.state import StatesGroup, State
 
 from .builders.questions import QuestionBuilder
 from .exceptions.questions import NoQuestionsEnteredError,MessageNotEnteredError
-from .models import Question, QuestionType
+from .models.buttons import InfoButtons
+from .models.messages import InfoMessages
+from .models.question import Question, QuestionType
 
 from typing import Dict, Tuple, Any, List
 from pydantic import BaseModel, create_model, Field
@@ -36,14 +38,8 @@ class BriefSurvey:
         self.save_handler = save_handler
         self.result_model = result_model
         self.command_start= start_command
-        self.messages = {
-            "invalid_input": "Пожалуйста, введите корректные данные.",
-            "save_success": "Спасибо! Данные успешно сохранены.",
-            "save_fail": "Произошла ошибка при сохранении. Попробуйте позже.",
-        }
-        if messages:
-            self.messages.update(messages)
-
+        self.info_messages = InfoMessages()
+        self.buttons = InfoButtons()
         self.states_prefix = states_prefix
         self._dialog = None
 
@@ -66,7 +62,7 @@ class BriefSurvey:
             return
 
         if question.validator and not question.validator(text):
-            await message.answer(self.messages["invalid_input"])
+            await message.answer(self.info_messages.invalid_input)
             return
 
         if question.name == "weight":
@@ -125,7 +121,7 @@ class BriefSurvey:
         elif message.video:
             file_id = message.video.file_id
         else:
-            await message.answer(self.messages["invalid_input"])
+            await message.answer(self.info_messages.invalid_input)
             return
         print(message.photo)
         ctx_data = manager.current_context().dialog_data
@@ -151,7 +147,7 @@ class BriefSurvey:
         elif message.video:
             file_id = message.video.file_id
         else:
-            await message.answer(self.messages["invalid_input"])
+            await message.answer(self.info_messages.invalid_input)
             return
 
         ctx_data = manager.current_context().dialog_data
@@ -238,9 +234,9 @@ class BriefSurvey:
             await self.save_handler(user_id, result_obj)
         except Exception as e:
             print("Save handler error:", e)
-            await c.message.answer(self.messages["save_fail"])
+            await c.message.answer(self.info_messages.save_fail)
         else:
-            await c.message.answer(self.messages["save_success"])
+            await c.message.answer(self.info_messages.save_success)
         finally:
             await c.message.delete()
             await manager.done()
@@ -288,8 +284,8 @@ class BriefSurvey:
         self.windows = [self._make_window_for_question(q) for q in self.questions]
         self.windows.append(
             Window(
-                Const("Спасибо за заполнение!"),
-                Button(Const("Завершить"), id="finish", on_click=self._on_finish),
+                Const(self.info_messages.finish_text),
+                Button(Const(self.buttons.finish_text), id="finish", on_click=self._on_finish),
                 state=self.state_map["finish"],
             )
         )
