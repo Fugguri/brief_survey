@@ -127,16 +127,43 @@ class BriefSurvey:
         else:
             await message.answer(self.messages["invalid_input"])
             return
+        print(message.photo)
+        ctx_data = manager.current_context().dialog_data
+        media_list = ctx_data.get(question.name, None)
+        # if not isinstance(media_list, list):
+        #     media_list = [media_list]
+        # media_list.append(file_id)
+
+        ctx_data[question.name] = file_id
+
+        await manager.next()
+        return
+
+    async def _process_media_list_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
+        state_name = manager.current_context().state.state.split(":")[1]
+        question = self._get_question(state_name)
+        if not question:
+            await message.answer("Ошибка: вопрос не найден.")
+            return
+
+        if message.photo:
+            file_id = message.photo[-1].file_id
+        elif message.video:
+            file_id = message.video.file_id
+        else:
+            await message.answer(self.messages["invalid_input"])
+            return
 
         ctx_data = manager.current_context().dialog_data
-        media_list = ctx_data.get(question.name, [])
-        if not isinstance(media_list, list):
-            media_list = [media_list]
+        media_list = ctx_data.get(question.name, None)
+        # if not isinstance(media_list, list):
+        #     media_list = [media_list]
         media_list.append(file_id)
         ctx_data[question.name] = media_list
 
         await manager.next()
         return
+
     async def _confirm_multi_choice(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         ctx_data = manager.current_context().dialog_data
 
