@@ -11,6 +11,7 @@ class QuestionBase(BaseModel):
     text: str
     type: QuestionType
     validator: Optional[Callable[[str], bool]] = None
+    next_questions: Optional[Dict[str, str]] = None  # например {"Yes": "q3", "No": "q4"}
     next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
     media: Optional[str] = None,
 
@@ -24,7 +25,6 @@ class QuestionBase(BaseModel):
 class ChoiceQuestion(QuestionBase):
     choices: List[Tuple[str | int, str]]
     type: Literal["choice"] = "choice"
-    next_questions: Optional[Dict[str, str]] = None  # например {"Yes": "q3", "No": "q4"}
 
     @field_validator("choices")
     def check_choices_non_empty(cls, v, values):
