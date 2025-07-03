@@ -352,7 +352,9 @@ class BriefSurvey:
             return (str, Field(default=None))
         elif question_type == "number":
             return (float, Field(default=None))
-        elif question_type in ("photo", "video", "media"):
+        elif question_type in ("photo", "video"):
+            return (Optional[str], Field(default_factory=None))
+        elif question_type in ("media"):
             return (Optional[List[str]], Field(default_factory=list))
         else:
             return (str, Field(default=None))
