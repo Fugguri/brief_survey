@@ -32,9 +32,12 @@ def auto_switch_next_question(func):
     async def wrapper(self, *args, **kwargs):
         result = await func(self, *args, **kwargs)
         manager = kwargs.get("manager", None)
+        widget = kwargs.get("widget", None)
         for arg in args:
             if isinstance(arg,ManagerImpl):
                 manager =arg
+            if isinstance(arg,Button):
+                widget = arg
         if not manager:
             return result
 
@@ -50,6 +53,10 @@ def auto_switch_next_question(func):
                 next_state_name=question.next_question
             if next_state_name:
                 await manager.switch_to(self.state_map[next_state_name])
+            elif question.type=='multu_choice' and selected:
+                return result
+            elif question.type=='multu_choice' and widget.widget_id=="confirm":
+                return result
             else:
                 await manager.next()
 
@@ -73,6 +80,30 @@ class BriefSurvey:
             info_messages (InfoMessages): Сообщения для пользователя (ошибки, подсказки).
             buttons (InfoButtons): Тексты кнопок для управления опросом.
             states_prefix (str): Префикс для состояний FSM.
+
+        Примеры:
+
+        from brief_survey import BriefSurvey
+        from pydantic import BaseModel
+        from typing import Optional
+
+
+        class SurveyResult(BaseModel):
+            name: Optional[str]
+            gender: Optional[str]
+
+        async def save_handler(user_id: int, result:SurveyResult | any):
+            #динамическое обращение к полям результата опроса по имени вопроса если не указана модель.
+            name = result.mame
+            age = result.age
+            gender = result.gender
+            return
+        survey = BriefSurvey(
+            save_handler=save_handler,
+            # result_model=SurveyResult, опиционально
+            start_command='start_brief' # Можно настраивать команду начала опроса
+        )
+
         """
 
     def __init__(
