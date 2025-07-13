@@ -118,6 +118,31 @@ class BriefSurvey:
         """
                Инициализация опросника.
 
+               Example:
+               from brief_survey import BriefSurvey
+               from pydantic import BaseModel
+               from typing import Optional
+
+
+               class SurveyResult(BaseModel):
+                   name: Optional[str]
+                    gender: Optional[str]
+
+
+               #динамическое обращение к полям результата опроса по имени вопроса если не указана модель
+               async def save_handler(user_id: int, result:SurveyResult | any):
+                    name = result.mame
+                    age = result.age
+                    gender = result.gender
+                    return
+
+
+               survey = BriefSurvey(
+                    save_handler=save_handler,
+                    result_model=SurveyResult, #опционально
+                    start_command='start_brief' #Можно настраивать команду начала опроса
+                )
+
                Args:
                    save_handler: Асинхронная функция для сохранения результата (user_id, result).
                    result_model: Pydantic-модель результата (опционально, может быть создана автоматически).
@@ -337,7 +362,7 @@ class BriefSurvey:
                 [f"{err['loc'][0]}: {err['msg']}" for err in e.errors()]
             ))
             return
-
+        await c.answer()
         try:
             await self.save_handler(user_id, result_obj)
         except Exception as e:
@@ -348,7 +373,6 @@ class BriefSurvey:
         finally:
             await c.message.delete()
             await manager.done()
-            await c.answer()
 
     async def start(self, message: types.Message, dialog_manager: DialogManager, state: FSMContext):
         first_state_name = self.questions[0].name if self.questions else None
