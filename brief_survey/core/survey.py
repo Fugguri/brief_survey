@@ -362,7 +362,8 @@ class BriefSurvey:
                 [f"{err['loc'][0]}: {err['msg']}" for err in e.errors()]
             ))
             return
-        await c.answer()
+
+        mes = await c.message.answer(self.info_messages.pre_save_message)
         try:
             await self.save_handler(user_id, result_obj)
         except Exception as e:
@@ -371,6 +372,7 @@ class BriefSurvey:
         else:
             await c.message.answer(self.info_messages.save_success)
         finally:
+            await mes.delete()
             await c.message.delete()
             await manager.done()
 

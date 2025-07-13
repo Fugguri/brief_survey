@@ -7,6 +7,6 @@ class InfoMessages(BaseModel):
     save_fail:str = Field(default="Произошла ошибка при сохранении. Попробуйте позже.",)
     finish_text:str = Field(default="Данные приняты.",)
     question_not_found:str = Field(default= "Ошибка: вопрос не найден.")
-
+    pre_save_message:str = Field(default= "Сохраняю")
     class Config:
         from_attributes=True
