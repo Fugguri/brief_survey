@@ -360,7 +360,11 @@ dp.callback_query.register(handle_callback,StateFilter(None))
 
 
 # ToDo
-- Добавить обработку медиа списка
-
+- add media list handler 
+- add forced_exit to terminate survey
+- optional message when survey starts *
+- keyboards when the survey ended
+- add button to final message "repeat" or  "start again" *
+- fix result model validator
 # for any errors send me a telegram message to @fugguri.
 # ☕️bye me a coffe appreciated 

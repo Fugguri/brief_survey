@@ -2,6 +2,7 @@ from functools import wraps
 from typing import List, Optional, Callable, Any, Dict, Union, Literal, Tuple, Set
 
 from aiogram.enums import ContentType
+from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
 from pydantic import BaseModel, ValidationError, Field
 from aiogram import types, Dispatcher, F
 from aiogram.fsm.context import FSMContext
@@ -114,6 +115,7 @@ class BriefSurvey:
             questions: Optional[List[Question]] = [],
             states_prefix: str = "SurveyStates",
             start_command: str = "start_survey",
+            final_reply_markup:InlineKeyboardMarkup| ReplyKeyboardMarkup = None
     ):
         """
                Инициализация опросника.
@@ -157,7 +159,9 @@ class BriefSurvey:
         self.info_messages: InfoMessages = InfoMessages()
         self.buttons: InfoButtons = InfoButtons()
         self.states_prefix = states_prefix
+        self.final_reply_markup = final_reply_markup
         self._dialog = None
+        self.state:FSMContext|None = None
 
     @staticmethod
     def _create_states_group(class_name: str, state_names: List[str]):
@@ -166,8 +170,14 @@ class BriefSurvey:
         mapping = {name: getattr(group, name) for name in state_names}
         return group, mapping
 
-    def get_dialog(self) -> Dialog:
+    @property
+    def questions(self):
+        return self.questions
+
+    @property
+    def dialog(self) -> Dialog:
         return self._dialog
+
     @auto_switch_next_question
     async def _process_text_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
         text = message.text.strip()
@@ -189,7 +199,6 @@ class BriefSurvey:
     @auto_switch_next_question
     async def _process_choice_selected(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         # selected = widget.widget_id
-        print(widget)
         selected = widget.text.text  # Получаем текст кнопки, а не id (callback_data)
         state_name = manager.current_context().state.state.split(":")[1]
 
@@ -364,13 +373,16 @@ class BriefSurvey:
             return
 
         mes = await c.message.answer(self.info_messages.pre_save_message)
+        markup  = None
+        if self.final_reply_markup:
+            markup=self.final_reply_markup
         try:
             await self.save_handler(user_id, result_obj)
         except Exception as e:
             print("Save handler error:", e)
-            await c.message.answer(self.info_messages.save_fail)
+            await c.message.answer(self.info_messages.save_fail,reply_markup=markup)
         else:
-            await c.message.answer(self.info_messages.save_success)
+            await c.message.answer(self.info_messages.save_success,reply_markup=markup)
         finally:
             await mes.delete()
             await c.message.delete()
@@ -378,11 +390,23 @@ class BriefSurvey:
 
     async def start(self, message: types.Message, dialog_manager: DialogManager, state: FSMContext):
         first_state_name = self.questions[0].name if self.questions else None
+        if self.info_messages.start_message:
+            await message.answer(self.info_messages.start_message)
         if first_state_name:
+            self.state = state
             await state.set_state(self.state_map[first_state_name])
             await dialog_manager.start(self.state_map[first_state_name], mode=StartMode.RESET_STACK)
         else:
             await message.answer("Извините, еще нет вопросов для опроса.")
+
+    async def _start_again(self, c: types.CallbackQuery, button, manager: DialogManager):
+        first_state_name = self.questions[0].name if self.questions else None
+        if first_state_name:
+            await self.state.set_state(self.state_map[first_state_name])
+            await manager.start(self.state_map[first_state_name], mode=StartMode.RESET_STACK)
+        else:
+            await c.message.answer("Извините, еще нет вопросов для опроса.")
+
 
     async def cmd_start_survey_handler(
             self,
@@ -429,13 +453,15 @@ class BriefSurvey:
                 Const(self.info_messages.finish_text),
 
                 Button(Const(self.buttons.finish_text), id="finish", on_click=self._on_finish),
+                Button(Const(self.buttons.start_again), id="start_again", on_click=self._start_again),
                 state=self.state_map["finish"],
             )
         )
 
         self._dialog = Dialog(*self.windows)
-        dp.include_router(self.get_dialog())
+        dp.include_router(self.dialog)
         setup_dialogs(dp)
+
 
     def add_question(
             self,
@@ -449,7 +475,7 @@ class BriefSurvey:
             media_path: Optional[str] = None,
             *args,
             **kwargs
-    ):
+    )->Question:
         """
                Добавляет новый вопрос в опросник.
 
@@ -499,6 +525,7 @@ class BriefSurvey:
             **kwargs
         )
         self.questions.append(question_model)
+        return question_model
 
     @staticmethod
     def get_field_type_and_default(question_type: str) -> Tuple[Any, Any]:
