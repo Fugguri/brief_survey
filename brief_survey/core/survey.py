@@ -152,7 +152,7 @@ class BriefSurvey:
                    states_prefix: Префикс для состояний FSM.
                    start_command: Команда для запуска опроса в Telegram.
                """
-        self.questions = questions
+        self._questions = questions
         self.save_handler = save_handler
         self.result_model = result_model
         self.command_start = start_command
@@ -172,7 +172,7 @@ class BriefSurvey:
 
     @property
     def questions(self):
-        return self.questions
+        return self._questions
 
     @property
     def dialog(self) -> Dialog:
