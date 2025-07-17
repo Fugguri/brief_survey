@@ -48,16 +48,20 @@ def auto_switch_next_question(func):
         if question:
             next_state_name =None
             selected = manager.current_context().dialog_data[question.name]
+            print(selected)
+            print( question.type)
+            print(question.type=='multi_choice')
+            print(widget.widget_id)
             if question.next_questions and selected in question.next_questions:
                 next_state_name = question.next_questions[selected]
             elif question.next_question:
                 next_state_name=question.next_question
-            if next_state_name:
+            if question.type=='multi_choice' and widget.widget_id=="confirm":
                 await manager.switch_to(self.state_map[next_state_name])
-            elif question.type=='multu_choice' and selected:
+            elif question.type=='multi_choice' and selected:
                 return result
-            elif question.type=='multu_choice' and widget.widget_id=="confirm":
-                return result
+            elif next_state_name:
+                await manager.switch_to(self.state_map[next_state_name])
             else:
                 await manager.next()
 
