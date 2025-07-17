@@ -9,5 +9,6 @@ class InfoMessages(BaseModel):
     question_not_found:str = Field(default= "Ошибка: вопрос не найден.")
     pre_save_message:str = Field(default= "Сохраняю")
     start_message:str = Field(default=None)
+    forced_exit_message:str = Field(default="Выход из опроса.Введенные данные не позволяют продолжить опрос")
     class Config:
         from_attributes=True

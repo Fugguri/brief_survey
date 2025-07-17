@@ -14,6 +14,7 @@ class QuestionBase(BaseModel):
     next_questions: Optional[Dict[str, str]] = None  # например {"Yes": "q3", "No": "q4"}
     next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
     media: Optional[str] = None,
+    forced_exit_validator: Optional[Callable[[str], bool]] = None
 
     @field_validator('type')
     def type_must_be_known(cls, v):

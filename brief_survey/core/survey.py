@@ -48,10 +48,6 @@ def auto_switch_next_question(func):
         if question:
             next_state_name =None
             selected = manager.current_context().dialog_data[question.name]
-            print(selected)
-            print( question.type)
-            print(question.type=='multi_choice')
-            print(widget.widget_id)
             if question.next_questions and selected in question.next_questions:
                 next_state_name = question.next_questions[selected]
             elif question.next_question:
@@ -116,7 +112,7 @@ class BriefSurvey:
             *,
             save_handler: Callable[[int, Any], Any],
             result_model: BaseModel = None,
-            questions: Optional[List[Question]] = [],
+            questions: Optional[List[Question]] = None,
             states_prefix: str = "SurveyStates",
             start_command: str = "start_survey",
             final_reply_markup:InlineKeyboardMarkup| ReplyKeyboardMarkup = None
@@ -194,6 +190,9 @@ class BriefSurvey:
         if question.validator and not question.validator(text):
             await message.answer(self.info_messages.invalid_input)
             return
+        if question.forced_exit_validator and not question.forced_exit_validator(text):
+            await self.forced_exit_on_validation_error_handler(message,manager)
+            return
 
         if question.name == "weight":
             text = text.replace(",", ".")
@@ -210,23 +209,9 @@ class BriefSurvey:
         if not question:
             await c.answer(self.info_messages.question_not_found)
             return
-        # Проверяем есть ли для выбранного ответа следующий вопрос
-        # next_state_name = None
-        # if question.next_questions and selected in question.next_questions:
-        #     next_state_name = question.next_questions[selected]
-        # elif question.next_question:
-        #     next_state_name = question.next_question
-        # else:
-        #     # переходим к следующему вопросу в порядке списка
-        #     idx = next((i for i, q in enumerate(self.questions) if q.name == state_name), None)
-        #     if idx is not None and idx + 1 < len(self.questions):
-        #         next_state_name = self.questions[idx + 1].name
-        #     else:
-        #         next_state_name = "finish"
 
         manager.current_context().dialog_data[question.name] = selected
         await c.answer()
-        # await manager.switch_to(self.state_map[next_state_name])
 
     @auto_switch_next_question
     async def _process_multi_choice_selected(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
@@ -314,7 +299,9 @@ class BriefSurvey:
         ctx_data[question.name] = ", ".join(multi_selected)
         await c.answer()
 
-
+    async def forced_exit_on_validation_error_handler(self,message:types.Message,manager: DialogManager):
+        await message.answer(self.info_messages.forced_exit_message)
+        await manager.done()
 
     def _get_question(self, name: str) -> Optional[Question]:
         for q in self.questions:
@@ -477,6 +464,7 @@ class BriefSurvey:
             next_questions: Optional[Dict[str, str]] = None,  # например {"Yes": "q3", "No": "q4"},
             next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
             media_path: Optional[str] = None,
+            forced_exit_validator:Optional[Callable[[str], bool]] = None,
             *args,
             **kwargs
     )->Question:
@@ -525,6 +513,7 @@ class BriefSurvey:
             next_questions=next_questions,
             next_question=next_question,
             media=media_path,
+            forced_exit_validator=forced_exit_validator,
             *args,
             **kwargs
         )
