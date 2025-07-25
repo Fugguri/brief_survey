@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="brief_survey",
-    version="0.2.2.1",
+    version="0.2.2.2",
     description="Dynamic survey/dialog with aiogram_dialog and Pydantic support",
     author="Fugguri",
     url="https://github.com/Fugguri/brief_survey",

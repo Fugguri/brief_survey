@@ -504,6 +504,6 @@ survey.buttons.start_again = "Начать заново"
 
 # ToDo
 - add media list handler 
- 
+- add validator by name of question or by validator name
 # for any errors send me a telegram message to [@fugguri](https://t/me/fugguri).
 # ☕️bye me a coffe appreciated 

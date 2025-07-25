@@ -17,12 +17,14 @@ from typing import Optional, Callable, Set, Generic, TypeVar, Type, Dict, Tuple,
 
 from .builders.questions import QuestionBuilder
 from .exceptions.questions import NoQuestionsEnteredError, MessageTextNotEnteredError, QuestionNotFountError
+from .exceptions.validators import ValidatorNotFountError, EmptyValidatorNameError
 from .models.buttons import InfoButtons
 from .models.messages import InfoMessages
 from .models.question import Question, QuestionType
 
 
 from .utils.next_question_switcher_decorator import auto_switch_next_question
+from ..utils import find_function_in_folder
 
 ResultModelType = TypeVar("ResultModelType", bound=BaseModel)
 
@@ -72,7 +74,7 @@ class BriefSurvey(Generic[ResultModelType]):
             *,
             save_handler: Callable[[int, Any], Any],
             result_model: Optional[Type[ResultModelType]] = None,
-            questions: List[Question] = [],
+            questions: Optional[List[Question]] = None,
             states_prefix: str = "SurveyStates",
             start_command: str = "start_survey",
             final_reply_markup: InlineKeyboardMarkup | ReplyKeyboardMarkup = None
@@ -139,7 +141,7 @@ class BriefSurvey(Generic[ResultModelType]):
         return self._dialog
 
     @auto_switch_next_question
-    async def _process_text_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
+    async def _process_text_input(self, message: types.Message, manager: DialogManager):
         text = message.text.strip()
         state_name = manager.current_context().state.state.split(":")[1]
         question = self._get_question(state_name)
@@ -269,6 +271,7 @@ class BriefSurvey(Generic[ResultModelType]):
         await manager.done()
 
     def _get_question(self, name: str) -> Optional[Question]:
+
         for q in self.questions:
             if q.name == name:
                 return q
@@ -423,7 +426,7 @@ class BriefSurvey(Generic[ResultModelType]):
             question_type: QuestionType = "text",
             name: str = None,
             choices: Optional[List[str] | Tuple[str] | Set[str]] = None,
-            validator: Optional[Callable[[str], bool]] = None,
+            validator: Optional[Callable[[str], bool]|str] = None,
             next_questions: Optional[Dict[str, str]] = None,  # например {"Yes": "q3", "No": "q4"},
             next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
             media_path: Optional[str] = None,
@@ -466,7 +469,11 @@ class BriefSurvey(Generic[ResultModelType]):
             question_type = 'choice'
         if not name:
             name = f"q{len(self.questions) + 1}"
-
+        if type(validator) == str:
+            find_validator = find_function_in_folder(validator)
+            if not find_validator:
+                raise ValidatorNotFountError(validator)
+            validator = find_validator
         question_model = QuestionBuilder.create(
             text=text,
             question_type=question_type,
@@ -480,7 +487,9 @@ class BriefSurvey(Generic[ResultModelType]):
             *args,
             **kwargs
         )
-        self.questions.append(question_model)
+        if not self.questions:
+            self._questions = []
+        self._questions.append(question_model)
         return question_model
 
     @staticmethod
@@ -513,7 +522,7 @@ class BriefSurvey(Generic[ResultModelType]):
             self.result_model = create_model('DynamicResultModel', **fields)
             return self.result_model
         else:
-            DynamicResultModel = create_model('DynamicResultModel', **fields)
-            return DynamicResultModel
+            model = create_model('DynamicResultModel', **fields)
+            return model
 
 
