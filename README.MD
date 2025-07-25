@@ -30,7 +30,7 @@ pip install -e brief_survey
 ### (case 1) Dynamic crate a brief 
 ```python
 from brief_survey import BriefSurvey
-
+from brief_survey.validators.person import age
 async def save_handler(user_id: int, result: any):
     # dynamic access to survey result fields by question name.
     name = result.name
@@ -60,8 +60,9 @@ survey.add_question(
     text="Your age?",
     question_type="number",
     name="age",
-    validator=lambda x: x.isdigit() and 0 < int(x) < 120
+    validator=age # You can use validators from validators path of this lib.
 )
+
 
 survey.add_question(
     text="Select your gender",
@@ -231,7 +232,7 @@ survey.info_messages.invalid_input = "Получены неверные данн
 #Можно настраивать сообщени и кнопку в конце опроса
 survey.info_messages.invalid_input = "Получены неверные данные, попробуйте еще раз"
 survey.buttons.finish_text = "Завершить опрос" 
-
+from brief_survey.validators.person import age  
 survey.add_question(
     text="Как вас зовут?",
     question_type="text",
@@ -242,7 +243,7 @@ survey.add_question(
     text="Ваш возраст?",
     question_type="number",
     name="age",
-    validator=lambda x: x.isdigit() and 0 < int(x) < 120
+    validator=age # Вы можете использовать готовые валидаторы из раздела validators
 )
 survey.add_question(
     text="Выберите пол",
@@ -254,6 +255,7 @@ survey.add_question(
     'Мужской': "favorite_car",
     'Женский': "favorite_color",
     }
+    
 )
 survey.add_question(
     text="Любимая марка автомобиля?",
@@ -350,7 +352,8 @@ survey.register_handlers(dp=dp,
 /start_survey
 
 ## Важно.
-Если у вас есть глобальный handler, фильтруйте state вручную, при помощи StateFilter.Неясные конфликты и после первого сообщения опросник перестает работать.
+Если у вас есть глобальный handler, фильтруйте state вручную, при помощи StateFilter.
+Неясные конфликты и после первого сообщения опросник перестает работать.
 
 ``` python
 from aiogram.filters import StateFilter
