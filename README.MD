@@ -56,6 +56,8 @@ BriefSurvey is a module for quick and flexible creation of dialog-based surveys 
 - Easy to extend and customize.
 - Supports different question types: text, number, single-choice, multiple-choice.
 - Simple integration and handler registration.
+- Auto-validation questions by names.Questions with names like "age", "weight" validate and send error messages automatically without validator enter.
+
 
 ---
 ## Installation
@@ -287,6 +289,7 @@ BriefSurvey — это модуль для быстрой и гибкой реа
 - Легко расширяется и настраивается.
 - Позволяет реализовать опросник с разными типами вопросов: текст, число, выбор одного или нескольких вариантов.
 - Простое подключение и регистрация обработчиков.
+- Автоматическая валидация по имени вопроса. Поля типа "age", "weight" проходят автоматическую валидацию и присылают сообщение об ошибке, без указания валидаторов .
 
 ---
 
@@ -505,5 +508,6 @@ survey.buttons.start_again = "Начать заново"
 # ToDo
 - add media list handler
 - check same questions name in list
+- 
 # for any errors send me a telegram message to [@fugguri](https://t/me/fugguri).
 # ☕️bye me a coffe appreciated 
