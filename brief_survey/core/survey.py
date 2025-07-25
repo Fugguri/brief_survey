@@ -1,12 +1,10 @@
-from functools import wraps
-from typing import List, Optional, Callable, Any, Dict, Union, Literal, Tuple, Set
+
 
 from aiogram.enums import ContentType
 from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
-from pydantic import BaseModel, ValidationError, Field
+from pydantic import  ValidationError
 from aiogram import types, Dispatcher, F
 from aiogram.fsm.context import FSMContext
-from aiogram_dialog.manager.manager import ManagerImpl
 from aiogram_dialog import Dialog, DialogManager, Window, StartMode, setup_dialogs
 from aiogram_dialog.widgets.kbd import Button
 from aiogram_dialog.widgets.text import Const
@@ -14,6 +12,8 @@ from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram.filters import Command
 from aiogram.fsm.state import StatesGroup, State
+from pydantic import BaseModel, create_model, Field
+from typing import Optional, Callable, Set, Generic, TypeVar, Type, Dict, Tuple, Any, List
 
 from .builders.questions import QuestionBuilder
 from .exceptions.questions import NoQuestionsEnteredError, MessageTextNotEnteredError, QuestionNotFountError
@@ -21,52 +21,12 @@ from .models.buttons import InfoButtons
 from .models.messages import InfoMessages
 from .models.question import Question, QuestionType
 
-from typing import Dict, Tuple, Any, List
-from pydantic import BaseModel, create_model, Field
 
-def auto_switch_next_question(func):
-    """
-    Декоратор для методов класса, который после выполнения
-    переключит состояние в диалоге, используя self из метода.
-    """
-    @wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        result = await func(self, *args, **kwargs)
-        manager = kwargs.get("manager", None)
-        widget = kwargs.get("widget", None)
-        for arg in args:
-            if isinstance(arg,ManagerImpl):
-                manager =arg
-            if isinstance(arg,Button):
-                widget = arg
-        if not manager:
-            return result
+from .utils.next_question_switcher_decorator import auto_switch_next_question
 
-        state_name = manager.current_context().state.state.split(":")[1]
-        question = self._get_question(state_name)
+ResultModelType = TypeVar("ResultModelType", bound=BaseModel)
 
-        if question:
-            next_state_name =None
-            selected = manager.current_context().dialog_data[question.name]
-            if question.next_questions and selected in question.next_questions:
-                next_state_name = question.next_questions[selected]
-            elif question.next_question:
-                next_state_name=question.next_question
-            if question.type=='multi_choice' and widget.widget_id=="confirm":
-                await manager.switch_to(self.state_map[next_state_name])
-            elif question.type=='multi_choice' and selected:
-                return result
-            elif next_state_name:
-                await manager.switch_to(self.state_map[next_state_name])
-            else:
-                await manager.next()
-
-        return result
-
-    return wrapper
-
-
-class BriefSurvey:
+class BriefSurvey(Generic[ResultModelType]):
     """
         Универсальный динамический опросник для Telegram-ботов на базе aiogram_dialog.
 
@@ -101,7 +61,7 @@ class BriefSurvey:
             return
         survey = BriefSurvey(
             save_handler=save_handler,
-            # result_model=SurveyResult, опиционально
+            result_model=SurveyResult, # Опиционально
             start_command='start_brief' # Можно настраивать команду начала опроса
         )
 
@@ -111,11 +71,11 @@ class BriefSurvey:
             self,
             *,
             save_handler: Callable[[int, Any], Any],
-            result_model: BaseModel = None,
-            questions: Optional[List[Question]] = None,
+            result_model: Optional[Type[ResultModelType]] = None,
+            questions: List[Question] = [],
             states_prefix: str = "SurveyStates",
             start_command: str = "start_survey",
-            final_reply_markup:InlineKeyboardMarkup| ReplyKeyboardMarkup = None
+            final_reply_markup: InlineKeyboardMarkup | ReplyKeyboardMarkup = None
     ):
         """
                Инициализация опросника.
@@ -161,7 +121,7 @@ class BriefSurvey:
         self.states_prefix = states_prefix
         self.final_reply_markup = final_reply_markup
         self._dialog = None
-        self.state:FSMContext|None = None
+        self.state: FSMContext = None
 
     @staticmethod
     def _create_states_group(class_name: str, state_names: List[str]):
@@ -189,10 +149,11 @@ class BriefSurvey:
 
         if question.validator and not question.validator(text):
             await message.answer(self.info_messages.invalid_input)
-            return
+            return True
+
         if question.forced_exit_validator and not question.forced_exit_validator(text):
-            await self.forced_exit_on_validation_error_handler(message,manager)
-            return
+            await self.forced_exit_on_validation_error_handler(message, manager)
+            return True
 
         if question.name == "weight":
             text = text.replace(",", ".")
@@ -208,7 +169,7 @@ class BriefSurvey:
         question = self._get_question(state_name)
         if not question:
             await c.answer(self.info_messages.question_not_found)
-            return
+            return True
 
         manager.current_context().dialog_data[question.name] = selected
         await c.answer()
@@ -220,7 +181,7 @@ class BriefSurvey:
         question = self._get_question(state_name)
         if not question:
             await c.answer(self.info_messages.question_not_found)
-            return
+            return True
 
         ctx_data = manager.current_context().dialog_data
         multi_selected = ctx_data.get(f"multi_selected_{state_name}", set())
@@ -234,8 +195,11 @@ class BriefSurvey:
         ctx_data[f"multi_selected_{state_name}"] = multi_selected
 
         ctx_data[question.name] = ", ".join(multi_selected)
+        try:
 
-        await c.answer(f"Выбрано: {', '.join(multi_selected) if multi_selected else 'ничего'}")
+            await c.answer(f"Выбрано: {', '.join(multi_selected) if multi_selected else 'ничего'}")
+        except:
+            pass
 
     @auto_switch_next_question
     async def _process_media_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
@@ -243,7 +207,7 @@ class BriefSurvey:
         question = self._get_question(state_name)
         if not question:
             await message.answer(self.info_messages.question_not_found)
-            return
+            return True
 
         if message.photo:
             file_id = message.photo[-1].file_id
@@ -251,7 +215,8 @@ class BriefSurvey:
             file_id = message.video.file_id
         else:
             await message.answer(self.info_messages.invalid_input)
-            return
+            return True
+
         ctx_data = manager.current_context().dialog_data
         media_list = ctx_data.get(question.name, None)
         # if not isinstance(media_list, list):
@@ -260,14 +225,13 @@ class BriefSurvey:
 
         ctx_data[question.name] = file_id
 
-
     @auto_switch_next_question
     async def _process_media_list_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
         state_name = manager.current_context().state.state.split(":")[1]
         question = self._get_question(state_name)
         if not question:
             await message.answer(self.info_messages.question_not_found)
-            return
+            return True
 
         if message.photo:
             file_id = message.photo[-1].file_id
@@ -275,7 +239,7 @@ class BriefSurvey:
             file_id = message.video.file_id
         else:
             await message.answer(self.info_messages.invalid_input)
-            return
+            return True
 
         ctx_data = manager.current_context().dialog_data
         media_list = ctx_data.get(question.name, None)
@@ -296,10 +260,11 @@ class BriefSurvey:
         state_name = manager.current_context().state.state.split(":")[1]
         multi_selected = ctx_data.get(f"multi_selected_{state_name}", set())
         question = self._get_question(state_name)
+
         ctx_data[question.name] = ", ".join(multi_selected)
         await c.answer()
 
-    async def forced_exit_on_validation_error_handler(self,message:types.Message,manager: DialogManager):
+    async def forced_exit_on_validation_error_handler(self, message: types.Message, manager: DialogManager):
         await message.answer(self.info_messages.forced_exit_message)
         await manager.done()
 
@@ -361,19 +326,19 @@ class BriefSurvey:
             await c.message.answer(f"Некорректные данные:\n" + "\n".join(
                 [f"{err['loc'][0]}: {err['msg']}" for err in e.errors()]
             ))
-            return
+            return True
 
         mes = await c.message.answer(self.info_messages.pre_save_message)
-        markup  = None
+        markup = None
         if self.final_reply_markup:
-            markup=self.final_reply_markup
+            markup = self.final_reply_markup
         try:
             await self.save_handler(user_id, result_obj)
         except Exception as e:
             print("Save handler error:", e)
-            await c.message.answer(self.info_messages.save_fail,reply_markup=markup)
+            await c.message.answer(self.info_messages.save_fail, reply_markup=markup)
         else:
-            await c.message.answer(self.info_messages.save_success,reply_markup=markup)
+            await c.message.answer(self.info_messages.save_success, reply_markup=markup)
         finally:
             await mes.delete()
             await c.message.delete()
@@ -397,7 +362,6 @@ class BriefSurvey:
             await manager.start(self.state_map[first_state_name], mode=StartMode.RESET_STACK)
         else:
             await c.message.answer("Извините, еще нет вопросов для опроса.")
-
 
     async def cmd_start_survey_handler(
             self,
@@ -453,7 +417,6 @@ class BriefSurvey:
         dp.include_router(self.dialog)
         setup_dialogs(dp)
 
-
     def add_question(
             self,
             text: str,
@@ -464,10 +427,10 @@ class BriefSurvey:
             next_questions: Optional[Dict[str, str]] = None,  # например {"Yes": "q3", "No": "q4"},
             next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
             media_path: Optional[str] = None,
-            forced_exit_validator:Optional[Callable[[str], bool]] = None,
+            forced_exit_validator: Optional[Callable[[str], bool]] = None,
             *args,
             **kwargs
-    )->Question:
+    ) -> Question:
         """
                Добавляет новый вопрос в опросник.
 
