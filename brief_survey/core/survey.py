@@ -24,7 +24,7 @@ from .models.question import Question, QuestionType
 
 
 from .utils.next_question_switcher_decorator import auto_switch_next_question
-from ..utils import find_function_in_folder
+from ..utils import find_validator_by_name
 
 ResultModelType = TypeVar("ResultModelType", bound=BaseModel)
 
@@ -431,6 +431,7 @@ class BriefSurvey(Generic[ResultModelType]):
             next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
             media_path: Optional[str] = None,
             forced_exit_validator: Optional[Callable[[str], bool]] = None,
+            validate_by_question_name:bool=True,
             *args,
             **kwargs
     ) -> Question:
@@ -469,10 +470,14 @@ class BriefSurvey(Generic[ResultModelType]):
             question_type = 'choice'
         if not name:
             name = f"q{len(self.questions) + 1}"
+
         if type(validator) == str:
-            find_validator = lidator_by_name(validator)
+            find_validator = find_validator_by_name(validator)
             if not find_validator:
                 raise ValidatorNotFountError(validator)
+            validator = find_validator
+        if not validator and validate_by_question_name:
+            find_validator = find_validator_by_name(name)
             validator = find_validator
         question_model = QuestionBuilder.create(
             text=text,
