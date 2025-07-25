@@ -2,8 +2,6 @@ from .core.models.question import QuestionBase, ChoiceQuestion, MultiChoiceQuest
 
 from .core.survey import BriefSurvey
 
-import validators
-
 __all__= [
     "validators",
     "BriefSurvey",
