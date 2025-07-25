@@ -24,7 +24,7 @@ from .models.question import Question, QuestionType
 
 
 from .utils.next_question_switcher_decorator import auto_switch_next_question
-from ..utils import find_function_in_folder
+from ..utils import find_validator_by_name
 
 ResultModelType = TypeVar("ResultModelType", bound=BaseModel)
 
@@ -470,7 +470,7 @@ class BriefSurvey(Generic[ResultModelType]):
         if not name:
             name = f"q{len(self.questions) + 1}"
         if type(validator) == str:
-            find_validator = find_function_in_folder(validator)
+            find_validator = find_validator_by_name(validator)
             if not find_validator:
                 raise ValidatorNotFountError(validator)
             validator = find_validator
