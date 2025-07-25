@@ -450,6 +450,7 @@ survey.register_handlers(dp=dp,
 
 Если у вас есть глобальный handler, фильтруйте state вручную, при помощи StateFilter.
 Неясные конфликты и после первого сообщения опросник перестает работать.
+
 ``` python
 from aiogram.filters import StateFilter
 dp.message.register(handle,StateFilter(None))  # только вне состояний!
