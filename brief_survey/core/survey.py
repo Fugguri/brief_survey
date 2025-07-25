@@ -24,7 +24,7 @@ from .models.question import Question, QuestionType
 
 
 from .utils.next_question_switcher_decorator import auto_switch_next_question
-from ..utils import find_validator_by_name
+from ..utils import find_function_in_folder
 
 ResultModelType = TypeVar("ResultModelType", bound=BaseModel)
 
@@ -141,7 +141,7 @@ class BriefSurvey(Generic[ResultModelType]):
         return self._dialog
 
     @auto_switch_next_question
-    async def _process_text_input(self, message: types.Message, manager: DialogManager):
+    async def _process_text_input(self, message: types.Message,dialog: Dialog, manager: DialogManager):
         text = message.text.strip()
         state_name = manager.current_context().state.state.split(":")[1]
         question = self._get_question(state_name)
@@ -470,7 +470,7 @@ class BriefSurvey(Generic[ResultModelType]):
         if not name:
             name = f"q{len(self.questions) + 1}"
         if type(validator) == str:
-            find_validator = find_validator_by_name(validator)
+            find_validator = lidator_by_name(validator)
             if not find_validator:
                 raise ValidatorNotFountError(validator)
             validator = find_validator
