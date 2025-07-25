@@ -1,5 +1,7 @@
 
 import re
+import phonenumbers
+from phonenumbers.phonenumberutil import NumberParseException
 
 def name(value: str) -> bool:
     """Проверяет, что имя содержит только буквы и дефис, длина 1-50 символов."""
@@ -9,7 +11,7 @@ def name(value: str) -> bool:
         return False
     return bool(re.match(r"^[A-Za-zА-Яа-яЁё\-]+$", value))
 
-def phone(value: str) -> bool:
+def phone_ru(value: str) -> bool:
     """Проверяет формат телефона +7XXXXXXXXXX или 8XXXXXXXXXX."""
     if not isinstance(value, str):
         return False
@@ -66,3 +68,26 @@ def validate_gender(value: str) -> bool:
     }
 
     return value_normalized in valid_genders
+
+
+def phone_international(value: str, region: str = None) -> bool:
+    """
+    Универсальная валидация телефонного номера для любых стран.
+
+    Аргументы:
+        value: строка, номер телефона в любом формате, включая международный (+...).
+        region: код страны ISO alpha-2 (например, 'RU', 'US'), если номер без кода страны,
+                для правильной обработки регионального формата.
+
+    Возвращает:
+        True, если номер валиден, иначе False.
+    """
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        # Разбор номера, учитывая регион, если он указан
+        phone_number = phonenumbers.parse(value, region)
+        # Проверка валидности номера
+        return phonenumbers.is_valid_number(phone_number)
+    except NumberParseException:
+        return False
