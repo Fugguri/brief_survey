@@ -1,3 +1,49 @@
+# Оглавление
+
+## 🇺🇸 English
+
+- [BriefSurvey Universal Dynamic Survey for Telegram Bots](#briefsurvey-universal-dynamic-survey-for-telegram-bots-with-aiogram-version-3-aiogram_dialog-and-pydantic)
+- [Description](#description)
+- [Installation](#installation)
+  - [From GitHub Repository](#from-github-repository)
+  - [Download Locally and Install](#download-locally-and-install)
+- [Quick Start](#quick-start)
+  - [(case 1) Dynamic create a brief](#case-1-dynamic-crate-a-brief)
+  - [(case 2)](#case-2)
+    - [1. Define your questions using Pydantic models](#1-define-your-questions-using-pydantic-models)
+    - [2. Define a result model](#2-define-a-result-model)
+    - [3. Create a function to save results](#3-create-a-function-to-save-results)
+    - [4. Initialize and register the survey](#4-initialize-and-register-the-survey)
+    - [5. Launch the survey in Telegram with the command](#5-launch-the-survey-in-telegram-with-the-command)
+- [Important](#important)
+- [Customizing Messages and Buttons in brief_survey](#customizing-messages-and-buttons-in-brief_survey)
+  - [What can be customized (English)](#what-can-be-customized-english)
+    - [InfoMessages — system messages](#infomessages-—-system-messages)
+    - [InfoButtons — button labels](#infobuttons-—-button-labels)
+  - [Example usage](#example-usage)
+
+## 🇷🇺 Русский
+
+- [BriefSurvey](#briefsurvey)
+- [Описание](#описание)
+- [Установка](#установка)
+  - [Github Repo](#github-repo)
+  - [Скачать локально и установить](#скачать-локально-и-установить)
+- [Быстрый старт](#быстрый-старт)
+  - [(1 вариант) Динамическое добавление вопросов](#1-вариант-динамическое-добавление-вопросов)
+  - [(2 вариант)](#2-вариант)
+    - [1. Определите вопросы](#1-определите-вопросы)
+    - [2. Определите модель результата](#2-определите-модель-результата)
+    - [3. Создайте функцию для сохранения результатов](#3-создайте-функцию-для-сохранения-результатов)
+    - [4. Инициализируйте и зарегистрируйте опросник](#4-инициализируйте-и-зарегистрируйте-опросник)
+    - [5. Запускайте команду в Telegram](#5запускайте-команду-в-telegram)
+- [Важно. Если у вас есть глобальный handler, фильтруйте state вручную при помощи StateFilter](#важно-если-у-вас-есть-глобальный-handler-фильтруйте-state-вручную-при-помощи-statefilter)
+- [Настройка сообщений и кнопок в brief_survey](#настройка-сообщений-и-кнопок-в-brief_survey)
+  - [Что можно настраивать](#что-можно-настраивать)
+    - [InfoMessages — системные сообщения](#infomessages-—-системные-сообщения)
+    - [InfoButtons — тексты кнопок](#infobuttons-—-тексты-кнопок)
+  - [Пример использования](#пример-использования)
+
 # 🇺🇸 English
 
 ## BriefSurvey
@@ -177,6 +223,52 @@ from aiogram.filters import StateFilter
 dp.message.register(handle, StateFilter(None))          # Only outside states
 dp.callback_query.register(handle_callback, StateFilter(None))
 ```
+# Customizing Messages and Buttons in brief_survey
+
+The **brief_survey** library provides `InfoMessages` and `InfoButtons` classes that allow you to easily customize system messages and button texts used in the survey dialogs.
+
+## What can be customized (English)
+
+### InfoMessages — system messages
+
+| Field                   | Description                                       | Default example                  |
+|-------------------------|-------------------------------------------------|---------------------------------|
+| `invalid_input`          | Message shown when user input is invalid         | `"Please enter valid data."`    |
+| `save_success`           | Message confirming data saved successfully       | `"Thank you! Data saved successfully."` |
+| `save_fail`              | Message shown if saving data failed               | `"An error occurred during saving. Please try again later."` |
+| `finish_text`            | Text displayed at survey completion               | `"Data received."`              |
+| `question_not_found`     | Message shown if question is not found            | `"Error: question not found."`  |
+| `pre_save_message`       | Message shown before saving data                   | `"Saving..."`                   |
+| `start_message`          | Message shown at start of survey (optional)       | `None`                         |
+| `forced_exit_message`    | Message shown when survey is forcefully exited    | `"Survey exited. Entered data does not allow continuation."` |
+
+### InfoButtons — button labels
+
+| Field                  | Description                                      | Default example                 |
+|------------------------|-------------------------------------------------|--------------------------------|
+| `finish_text`           | Text on the button to finish the survey          | `"Finish"`                    |
+| `multi_select_confirm`  | Text for confirming multi-select choice          | `"Confirm selection"`          |
+| `start_again`           | Text on the button to restart the survey         | `"Start again"`                |
+
+## Example usage
+``` python 
+Setting system messages
+survey.info_messages.invalid_input = "Invalid data received, please try again."
+survey.info_messages.save_success = "Thank you! Your responses have been saved."
+survey.info_messages.save_fail = "Saving failed, please try again later."
+survey.info_messages.finish_text = "Thank you for participating!"
+survey.info_messages.question_not_found = "Question not found."
+survey.info_messages.pre_save_message = "Saving data..."
+survey.info_messages.start_message = "Let's start the survey!"
+survey.info_messages.forced_exit_message = "Survey terminated due to an error."
+
+Setting button texts
+survey.buttons.finish_text = "Finish survey"
+survey.buttons.multi_select_confirm = "Confirm"
+survey.buttons.start_again = "Restart"
+```
+
+
 
 # 🇷🇺 Русский
 
@@ -232,6 +324,8 @@ survey.info_messages.invalid_input = "Получены неверные данн
 #Можно настраивать сообщени и кнопку в конце опроса
 survey.info_messages.invalid_input = "Получены неверные данные, попробуйте еще раз"
 survey.buttons.finish_text = "Завершить опрос" 
+# Если необходимо можете отправить сообщение перед началом опроса
+survey.info_messages.start_message = 'Пройдите небольшой опрос перед началом работы с ботом.'
 from brief_survey.validators.person import age  
 survey.add_question(
     text="Как вас зовут?",
@@ -360,14 +454,54 @@ from aiogram.filters import StateFilter
 dp.message.register(handle,StateFilter(None))  # только вне состояний!
 dp.callback_query.register(handle_callback,StateFilter(None))
 ```
+## Настройка сообщений и кнопок в brief_survey
+
+В библиотеке **brief_survey** доступны классы `InfoMessages` и `InfoButtons`, которые позволяют легко настраивать тексты системных сообщений и кнопок, используемых в диалогах опросника.
+
+### Что можно настраивать
+
+#### InfoMessages — системные сообщения
+
+| Поле                    | Описание                                             | Пример по умолчанию                                  |
+|-------------------------|-----------------------------------------------------|-----------------------------------------------------|
+| `invalid_input`          | Сообщение при неверном вводе                         | `"Пожалуйста, введите корректные данные."`          |
+| `save_success`           | Сообщение об успешном сохранении                     | `"Спасибо! Данные успешно сохранены."`              |
+| `save_fail`              | Сообщение об ошибке при сохранении                   | `"Произошла ошибка при сохранении. Попробуйте позже."` |
+| `finish_text`            | Текст при завершении опроса                          | `"Данные приняты."`                                  |
+| `question_not_found`     | Сообщение при ошибке отсутствия вопроса              | `"Ошибка: вопрос не найден."`                        |
+| `pre_save_message`       | Сообщение перед отправкой данных на сохранение       | `"Сохраняю"`                                         |
+| `start_message`          | Сообщение при начале опроса (опционально)            | `None`                                              |
+| `forced_exit_message`    | Сообщение при принудительном выходе из опроса        | `"Выход из опроса.Введенные данные не позволяют продолжить опрос"` |
+
+#### InfoButtons — тексты кнопок
+
+| Поле                   | Описание                                          | Пример по умолчанию               |
+|------------------------|---------------------------------------------------|----------------------------------|
+| `finish_text`           | Надпись на кнопке завершения опроса                | `"Завершить"`                    |
+| `multi_select_confirm`  | Текст кнопки для подтверждения выбора (множественный выбор) | `"Подтвердить выбор"`            |
+| `start_again`           | Текст кнопки для перезапуска опроса                 | `"Начать сначала"`               |
+
+### Пример использования
+``` python Настройка сообщений об ошибках и событий
+survey.info_messages.invalid_input = "Получены неверные данные, попробуйте еще раз"
+survey.info_messages.save_success = "Спасибо! Ваши ответы сохранены."
+survey.info_messages.save_fail = "Ошибка при сохранении, попробуйте позже."
+survey.info_messages.finish_text = "Спасибо за участие!"
+survey.info_messages.question_not_found = "Вопрос не найден."
+survey.info_messages.pre_save_message = "Данные сохраняются..."
+survey.info_messages.start_message = "Начинаем опрос!"
+survey.info_messages.forced_exit_message = "Опрос прерван из-за ошибки."
+
+Настройка текстов кнопок
+survey.buttons.finish_text = "Завершить опрос"
+survey.buttons.multi_select_confirm = "Подтвердить"
+survey.buttons.start_again = "Начать заново"
+```
+
 
 
 # ToDo
 - add media list handler 
-- add forced_exit to terminate survey
-- optional message when survey starts *
-- keyboards when the survey ended
-- add button to final message "repeat" or  "start again" *
-- fix result model validator
-# for any errors send me a telegram message to @fugguri.
+ 
+# for any errors send me a telegram message to [@fugguri](https://t/me/fugguri).
 # ☕️bye me a coffe appreciated 
