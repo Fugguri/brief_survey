@@ -13,6 +13,6 @@ setup(
         "phonenumbers>=9.0.10",
         "pydantic>=2.11.7",
     ],
-    python_requires='>=3.12',
+    python_requires='>=3.10',
 
 )
