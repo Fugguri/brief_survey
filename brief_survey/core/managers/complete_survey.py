@@ -33,5 +33,6 @@ class CompleteSurveyManager:
 
     async def aget_survey_by_id(self,idx:str|int):
         ...
+
     def get_survey_by_id(self,idx:str|int):
         ...

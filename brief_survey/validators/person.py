@@ -41,7 +41,7 @@ def weight(value: str) -> bool:
     except ValueError:
         return False
 
-def validate_gender(value: str) -> bool:
+def gender(value: str) -> bool:
     """
     Валидатор пола с поддержкой русского и английского языков.
 
@@ -70,7 +70,7 @@ def validate_gender(value: str) -> bool:
     return value_normalized in valid_genders
 
 
-def phone_international(value: str, region: str = None) -> bool:
+def phone(value: str, region: str = None) -> bool:
     """
     Универсальная валидация телефонного номера для любых стран.
 
