@@ -150,10 +150,10 @@ class BriefSurvey(Generic[ResultModelType]):
             return
 
         if question.validator and not question.validator(text):
-            if not question.validation_error_message:
-                error_text = self.info_messages.invalid_input
+            if question.validator_error_message:
+                error_text = question.validator_error_message
             else:
-                error_text = question.validation_error_message
+                error_text = self.info_messages.invalid_input
             await message.answer(error_text)
             return True
 
@@ -173,10 +173,10 @@ class BriefSurvey(Generic[ResultModelType]):
             return
 
         if question.validator and not question.validator(text):
-            if not question.validation_error_message:
+            if not question.validator_error_message:
                 error_text = self.info_messages.invalid_input
             else:
-                error_text = question.validation_error_message
+                error_text = question.validator_error_message
             await message.answer(error_text)
             return True
 
@@ -456,6 +456,7 @@ class BriefSurvey(Generic[ResultModelType]):
             media_path: Optional[str] = None,
             forced_exit_validator: Optional[Callable[[str], bool]] = None,
             validate_by_question_name:bool=True,
+            validator_error_message:Optional[str]=None,
             *args,
             **kwargs
     ) -> Question:
@@ -484,6 +485,17 @@ class BriefSurvey(Generic[ResultModelType]):
                        name="age",
                        validator=lambda x: x.isdigit() and 0 < int(x) < 120
                    )
+                   :param text:
+                   :param question_type:
+                   :param name:
+                   :param choices:
+                   :param validator:
+                   :param next_questions:
+                   :param next_question:
+                   :param media_path:
+                   :param validator_error_message:
+                   :param validate_by_question_name:
+                   :param forced_exit_validator:
                """
 
         if not text:
@@ -513,6 +525,7 @@ class BriefSurvey(Generic[ResultModelType]):
             next_question=next_question,
             media=media_path,
             forced_exit_validator=forced_exit_validator,
+            validator_error_message=validator_error_message,
             *args,
             **kwargs
         )
