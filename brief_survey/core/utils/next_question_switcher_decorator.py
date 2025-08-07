@@ -33,8 +33,16 @@ def auto_switch_next_question(func):
                 next_state_name = question.next_questions[selected]
             elif question.next_question:
                 next_state_name = question.next_question
-            if question.type == 'multi_choice' and widget.widget_id == "confirm":
-                await manager.switch_to(self.state_map[next_state_name])
+
+            if question.type == 'with_confirm' and widget and widget.widget_id == "confirm_text":
+                if next_state_name:
+                    await manager.switch_to(self.state_map[next_state_name])
+                else:
+                    await manager.next()
+            elif question.type == 'with_confirm' and selected:
+                return result
+            elif question.type == 'multi_choice' and widget.widget_id == "confirm":
+                    await manager.switch_to(self.state_map[next_state_name])
             elif question.type == 'multi_choice' and selected:
                 return result
             elif next_state_name:

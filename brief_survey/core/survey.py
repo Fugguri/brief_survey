@@ -167,10 +167,15 @@ class BriefSurvey(Generic[ResultModelType]):
     async def _process_text_input_with_confirmation(self, message: types.Message, dialog: Dialog, manager: DialogManager):
         text = message.text.strip()
         state_name = manager.current_context().state.state.split(":")[1]
+
         question = self._get_question(state_name)
         if not question:
             await message.answer(self.info_messages.question_not_found)
             return
+        ctx_data = manager.current_context().dialog_data
+
+        ctx_data[f"with_confirm_{state_name}"] = text
+
 
         if question.validator and not question.validator(text):
             if not question.validator_error_message:
@@ -180,11 +185,14 @@ class BriefSurvey(Generic[ResultModelType]):
             await message.answer(error_text)
             return True
 
-        if question.forced_exit_validator and not question.forced_exit_validator(text):
-            await self.forced_exit_on_validation_error_handler(message, manager)
-            return True
-
         manager.current_context().dialog_data[question.name] = text
+        text = f"Подтвердите введенные данные или отправьте данные заново.\n{question.confirm_field_name} {text}"
+        try:
+            # await message.delete()
+            await message.answer(text)
+
+        except Exception as ex:
+            print(ex)
 
     @auto_switch_next_question
     async def _process_choice_selected(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
@@ -290,6 +298,21 @@ class BriefSurvey(Generic[ResultModelType]):
         ctx_data[question.name] = ", ".join(multi_selected)
         await c.answer()
 
+    @auto_switch_next_question
+    async def _confirm_text_with_confirmation(self, c: types.CallbackQuery, button: Button, manager: DialogManager,*args,**kwargs):
+        ctx_data = manager.current_context().dialog_data
+
+        state_name = manager.current_context().state.state.split(":")[1]
+        text = ctx_data.get(f"with_confirm_{state_name}", "")
+        if not text:
+            ...
+        question = self._get_question(state_name)
+        if question.forced_exit_validator and not question.forced_exit_validator(text):
+            await self.forced_exit_on_validation_error_handler(c.message, manager)
+            return True
+        ctx_data[question.name] = text
+        await c.answer()
+
     async def forced_exit_on_validation_error_handler(self, message: types.Message, manager: DialogManager):
         await message.answer(self.info_messages.forced_exit_message)
         await manager.done()
@@ -315,6 +338,12 @@ class BriefSurvey(Generic[ResultModelType]):
         # Обработка по типу вопроса
         if question.type in ["text", "number"]:
             elements.append(MessageInput(self._process_text_input))
+        elif question.type =="with_confirm":
+            elements.append(MessageInput(self._process_text_input_with_confirmation))
+
+            confirm_btn = Button(Const(self.buttons.confirm_entered_text), id="confirm_text",
+                                 on_click=self._confirm_text_with_confirmation)
+            elements.append(confirm_btn)
         elif question.type == "choice":
             buttons = [
                 Button(text=Const(label), id=key, on_click=self._process_choice_selected)
@@ -331,7 +360,6 @@ class BriefSurvey(Generic[ResultModelType]):
             elements.extend(buttons)
             elements.append(confirm_btn)
         elif question.type in ["photo", "video", "media"]:
-            allowed_types = []
             if question.type == "photo":
                 allowed_types = [ContentType.PHOTO]
             elif question.type == "video":
@@ -457,6 +485,7 @@ class BriefSurvey(Generic[ResultModelType]):
             forced_exit_validator: Optional[Callable[[str], bool]] = None,
             validate_by_question_name:bool=True,
             validator_error_message:Optional[str]=None,
+            confirm_field_name:Optional[str]=None,
             *args,
             **kwargs
     ) -> Question:
@@ -526,6 +555,7 @@ class BriefSurvey(Generic[ResultModelType]):
             media=media_path,
             forced_exit_validator=forced_exit_validator,
             validator_error_message=validator_error_message,
+            confirm_field_name=confirm_field_name,
             *args,
             **kwargs
         )

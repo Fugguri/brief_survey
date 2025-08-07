@@ -1,3 +1,4 @@
 .gitignore
 tests.py
 __pycache__/
+bot.py

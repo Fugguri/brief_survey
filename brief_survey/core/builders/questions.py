@@ -19,6 +19,7 @@ class QuestionBuilder:
                next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
                media: Optional[str] = None,
                validator_error_message:Optional[str] = None,
+               confirm_field_name:Optional[str]=None,
                *args,
                **kwargs) -> 'QuestionBase':
         model_cls = QUESTION_TYPE_MAP.get(question_type)
@@ -33,6 +34,7 @@ class QuestionBuilder:
                          next_question=next_question,
                          media=media,
                          validator_error_message=validator_error_message,
+                         confirm_field_name=confirm_field_name,
                          *args,
                          **kwargs
                          )

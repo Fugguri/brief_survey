@@ -1,12 +1,28 @@
 from brief_survey import BriefSurvey
+from pydantic import BaseModel
+from typing import Optional
 
-def a():
-    return
-if __name__ == '__main__':
-    brief = BriefSurvey(save_handler=a,result_model=None)
-    brief.add_question(
-    text="Вопрос ",
-    question_type='photo',
-    choices=("да","нет")
 
+# Модель результата опроса
+class SurveyResult(BaseModel):
+    name: Optional[str]
+
+
+# Обработчик сохранения результата
+async def save_handler(user_id: int, result: SurveyResult):
+    print(f"Пользователь {user_id} ответил: {result}")
+
+survey = BriefSurvey(
+
+        save_handler=save_handler,
+        result_model=SurveyResult,
     )
+
+
+survey.add_question(
+    text='Укажите ИНН',
+    name="name",
+    question_type='with_confirm',
+    confirm_field_name="Имя:"
+
+)

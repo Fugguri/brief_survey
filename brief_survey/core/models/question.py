@@ -3,7 +3,7 @@ from pydantic import BaseModel, field_validator
 
 from brief_survey.core.exceptions.questions import UnknownQuestionTypeError
 
-QuestionType = Literal["text", "number", "choice", "multi_choice", "photo", "video", "media"]
+QuestionType = Literal["text", "number",'with_confirm', "choice", "multi_choice", "photo", "video", "media"]
 
 
 class QuestionBase(BaseModel):
@@ -16,7 +16,7 @@ class QuestionBase(BaseModel):
     media: Optional[str] = None,
     forced_exit_validator: Optional[Callable[[str], bool]] = None
     validator_error_message: Optional[str] =None
-
+    confirm_field_name:Optional[str] ="Введенные данные:"
     @field_validator('type')
     def type_must_be_known(cls, v):
         if v not in QuestionType.__args__:  # type: ignore
@@ -56,6 +56,7 @@ class SurveyResult(BaseModel):
 
 QUESTION_TYPE_MAP = {
     "text": QuestionBase,
+    "with_confirm": QuestionBase,
     "photo": QuestionBase,
     "video": QuestionBase,
     "media": QuestionBase,
