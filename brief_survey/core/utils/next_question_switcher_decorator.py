@@ -35,6 +35,8 @@ def auto_switch_next_question(func):
                 next_state_name = question.next_question
 
             if question.type == 'with_confirm' and widget and widget.widget_id == "confirm_text":
+                if not selected:
+                    return result
                 if next_state_name:
                     await manager.switch_to(self.state_map[next_state_name])
                 else:

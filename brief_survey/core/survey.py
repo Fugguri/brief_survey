@@ -2,6 +2,7 @@
 
 from aiogram.enums import ContentType
 from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
+from humanfriendly.terminal import message
 from pydantic import  ValidationError
 from aiogram import types, Dispatcher, F
 from aiogram.fsm.context import FSMContext
@@ -305,7 +306,8 @@ class BriefSurvey(Generic[ResultModelType]):
         state_name = manager.current_context().state.state.split(":")[1]
         text = ctx_data.get(f"with_confirm_{state_name}", "")
         if not text:
-            ...
+            await c.answer(self.info_messages.no_confirmed_data)
+            return
         question = self._get_question(state_name)
         if question.forced_exit_validator and not question.forced_exit_validator(text):
             await self.forced_exit_on_validation_error_handler(c.message, manager)

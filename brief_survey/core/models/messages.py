@@ -10,5 +10,7 @@ class InfoMessages(BaseModel):
     pre_save_message:str = Field(default= "Сохраняю")
     start_message:str = Field(default=None)
     forced_exit_message:str = Field(default="Выход из опроса.Введенные данные не позволяют продолжить опрос")
+    no_confirmed_data:str = Field(default='Укажите запрашиваемые данные чтобы продолжить...')
+
     class Config:
         from_attributes=True
