@@ -150,15 +150,39 @@ class BriefSurvey(Generic[ResultModelType]):
             return
 
         if question.validator and not question.validator(text):
-            await message.answer(self.info_messages.invalid_input)
+            if not question.validation_error_message:
+                error_text = self.info_messages.invalid_input
+            else:
+                error_text = question.validation_error_message
+            await message.answer(error_text)
             return True
 
         if question.forced_exit_validator and not question.forced_exit_validator(text):
             await self.forced_exit_on_validation_error_handler(message, manager)
             return True
 
-        if question.name == "weight":
-            text = text.replace(",", ".")
+        manager.current_context().dialog_data[question.name] = text
+
+    @auto_switch_next_question
+    async def _process_text_input_with_confirmation(self, message: types.Message, dialog: Dialog, manager: DialogManager):
+        text = message.text.strip()
+        state_name = manager.current_context().state.state.split(":")[1]
+        question = self._get_question(state_name)
+        if not question:
+            await message.answer(self.info_messages.question_not_found)
+            return
+
+        if question.validator and not question.validator(text):
+            if not question.validation_error_message:
+                error_text = self.info_messages.invalid_input
+            else:
+                error_text = question.validation_error_message
+            await message.answer(error_text)
+            return True
+
+        if question.forced_exit_validator and not question.forced_exit_validator(text):
+            await self.forced_exit_on_validation_error_handler(message, manager)
+            return True
 
         manager.current_context().dialog_data[question.name] = text
 
