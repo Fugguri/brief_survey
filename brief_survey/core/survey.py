@@ -343,7 +343,7 @@ class BriefSurvey(Generic[ResultModelType]):
         elif question.type =="with_confirm":
             elements.append(MessageInput(self._process_text_input_with_confirmation))
 
-            confirm_btn = Button(Const(f"Подтвердить {question.confirm_field_name.replace(':')}"
+            confirm_btn = Button(Const(f"Подтвердить {question.confirm_field_name.replace(':','')}"
                 if question.confirm_field_name  else self.buttons.confirm_entered_text), id="confirm_text",
                                  on_click=self._confirm_text_with_confirmation)
             elements.append(confirm_btn)
