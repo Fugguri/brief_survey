@@ -357,7 +357,10 @@ class BriefSurvey(Generic[ResultModelType]):
                 Button(text=Const(label), id=str(i), on_click=self._process_multi_choice_selected)
                 for i, (_, label) in enumerate(question.choices)  # type: ignore
             ]
-            confirm_btn = Button(Const(self.buttons.multi_select_confirm), id="confirm",
+            confirm_btn = Button(
+                Const(f"Подтвердить {question.confirm_field_name.replace(':')}"
+                if question.confirm_field_name  else self.buttons.multi_select_confirm  ),
+                                 id="confirm",
                                  on_click=self._confirm_multi_choice)
             elements.extend(buttons)
             elements.append(confirm_btn)
