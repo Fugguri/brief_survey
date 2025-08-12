@@ -1,5 +1,9 @@
 from setuptools import setup, find_packages
 
+def readme():
+  with open('README.md', 'r') as f:
+    return f.read()
+
 setup(
     name="brief_survey",
     version="0.2.3",
@@ -7,13 +11,21 @@ setup(
     author="Fugguri",
     url="https://github.com/Fugguri/brief_survey",
     packages=find_packages(),
+    long_description=readme(),
+
     install_requires=[
+
         "aiogram>=3.20",
         "aiogram_dialog>=2.3.1",
         "phonenumbers>=9.0.10",
         "pydantic>=2.11.7",
         "humanfriendly>=10.0",
     ],
+    keywords='example python',
+    project_urls={
+        'pypi': 'https://pypi.org/project/brief-survey/',
+        'github':'https://github.com/Fugguri/brief_survey'
+    },
     python_requires='>=3.10',
 
 )

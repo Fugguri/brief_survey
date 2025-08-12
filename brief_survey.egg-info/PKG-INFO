@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: brief_survey
-Version: 0.2.2.14
+Version: 0.2.3
 Summary: Dynamic survey/dialog with aiogram_dialog and Pydantic support
 Home-page: https://github.com/Fugguri/brief_survey
 Author: Fugguri
