@@ -7,12 +7,12 @@ def readme():
 
 setup(
     name="brief_survey",
-    version="0.2.5",
+    version="0.2.6",
     description="Dynamic survey/dialog for aiogram3  with aiogram_dialog and Pydantic support",
     author="Fugguri",
     url="https://github.com/Fugguri/brief_survey",
     packages=find_packages(),
-    long_description_content_type='Markdown',
+    long_description_content_type='text/markdown',
     long_description=readme(),
     classifiers=[
         'Programming Language :: Python :: 3.12',
