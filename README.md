@@ -61,6 +61,11 @@ BriefSurvey is a module for quick and flexible creation of dialog-based surveys 
 
 ---
 ## Installation
+### Via pip 
+
+```bash
+pip install brief-survey
+```
 ### From GitHub Repository
 
 ```bash
