@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: brief_survey
-Version: 0.2.3
+Version: 0.2.4
 Summary: Dynamic survey/dialog for aiogram3  with aiogram_dialog and Pydantic support
 Home-page: https://github.com/Fugguri/brief_survey
 Author: Fugguri
@@ -11,6 +11,7 @@ Classifier: Programming Language :: Python :: 3.12
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.10
+Description-Content-Type: Markdown
 License-File: LICENSE
 Requires-Dist: aiogram>=3.20
 Requires-Dist: aiogram_dialog>=2.3.1
@@ -20,6 +21,7 @@ Requires-Dist: humanfriendly>=10.0
 Dynamic: author
 Dynamic: classifier
 Dynamic: description
+Dynamic: description-content-type
 Dynamic: home-page
 Dynamic: keywords
 Dynamic: license-file
