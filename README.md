@@ -2,7 +2,7 @@
 
 ## 🇺🇸 English
 
-- [BriefSurvey Universal Dynamic Survey for Telegram Bots](#briefsurvey-universal-dynamic-survey-for-telegram-bots-with-aiogram-version-3-aiogram_dialog-and-pydantic)
+- [BriefSurvey](#briefsurvey)
 - [Description](#description)
 - [Installation](#installation)
   - [From GitHub Repository](#from-github-repository)
