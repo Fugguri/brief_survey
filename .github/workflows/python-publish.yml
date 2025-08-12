@@ -29,7 +29,6 @@ jobs:
       - name: Build release distributions
         run: |
           python -m pip install build
-          rm -r dist
           python -m build
 
       - name: Upload distributions
