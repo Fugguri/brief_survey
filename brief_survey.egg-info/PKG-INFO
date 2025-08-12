@@ -1,13 +1,15 @@
 Metadata-Version: 2.4
 Name: brief_survey
-Version: 0.1.0
+Version: 0.2.2.14
 Summary: Dynamic survey/dialog with aiogram_dialog and Pydantic support
 Home-page: https://github.com/Fugguri/brief_survey
 Author: Fugguri
-Requires-Python: >=3.12
-Requires-Dist: aiogram==3.20
-Requires-Dist: aiogram-dialog
-Requires-Dist: pydantic
+Requires-Python: >=3.10
+Requires-Dist: aiogram>=3.20
+Requires-Dist: aiogram_dialog>=2.3.1
+Requires-Dist: phonenumbers>=9.0.10
+Requires-Dist: pydantic>=2.11.7
+Requires-Dist: humanfriendly>=10.0
 Dynamic: author
 Dynamic: home-page
 Dynamic: requires-dist
