@@ -403,6 +403,8 @@ class BriefSurvey(Generic[ResultModelType]):
             await mes.delete()
             await c.message.delete()
             await manager.done()
+            await self.state.clear()
+
 
     async def start(self, message: types.Message, dialog_manager: DialogManager, state: FSMContext):
         first_state_name = self.questions[0].name if self.questions else None

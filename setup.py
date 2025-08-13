@@ -7,7 +7,7 @@ def readme():
 
 setup(
     name="brief_survey",
-    version="0.2.8.1",
+    version="0.2.8.2",
     description="Dynamic survey/dialog for aiogram3  with aiogram_dialog and Pydantic support",
     author="Fugguri",
     url="https://github.com/Fugguri/brief_survey",
