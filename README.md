@@ -21,6 +21,7 @@
     - [InfoMessages — system messages](#infomessages-—-system-messages)
     - [InfoButtons — button labels](#infobuttons-—-button-labels)
   - [Example usage](#example-usage)
+- [Validators](#validators)
 
 ## 🇷🇺 Русский
 
@@ -43,6 +44,7 @@
     - [InfoMessages — системные сообщения](#infomessages-—-системные-сообщения)
     - [InfoButtons — тексты кнопок](#infobuttons-—-тексты-кнопок)
   - [Пример использования](#пример-использования)
+- [Валидаторы](#валидаторы-)
 
 # 🇺🇸 English
 
@@ -274,6 +276,25 @@ survey.buttons.finish_text = "Finish survey"
 survey.buttons.multi_select_confirm = "Confirm"
 survey.buttons.start_again = "Restart"
 ```
+
+## Validators
+
+| Validator Name           | Description                                                      | Logic / Notes                                  |
+|--------------------------|-----------------------------------------------------------------|------------------------------------------------|
+| `validate_not_empty`     | Checks that string is not empty (ignoring spaces)               | `bool(value and value.strip())`                |
+| `validate_email`         | Simple email check via regex                                     | Regex `^[\w\.-]+@[\w\.-]+\.\w+$`               |
+| `validate_zip_code`      | Checks zip code: 5 or 6 consecutive digits                      | `^\d{5,6}$`                                    |
+| `validate_username`      | Username: letters, digits, underscores; length 3-30             | `^\w{3,30}$`                                   |
+| `name`                   | Name: letters and hyphens only, length 1-50                     | `^[A-Za-zА-Яа-яЁё\-]+$`                        |
+| `phone_ru`               | Russian phone format: +7XXXXXXXXXX or 8XXXXXXXXXX               | `^(?:\+7\|8)\d{10}$`                           |
+| `phone`                  | Universal phone validation using phonenumbers library           | Uses `phonenumbers` for parsing and validation |
+| `age`                    | Age: number from 0 to 120                                       | Integer, 0 ≤ age ≤ 120                         |
+| `height`                 | Height in cm: from 30 to 300                                    | float, 30 ≤ height ≤ 300                       |
+| `weight`                 | Weight in kg: from 2 to 500                                     | float, 2 ≤ weight ≤ 500                        |
+| `gender`                 | Gender support for RU/EN variants, case insensitive             | Checks membership in allowed string set        |
+| `validate_positive_int`  | Checks that value is a positive integer                         | `value.isdigit() and int(value) > 0`           |
+| `validate_url`           | Simple URL format check                                         | Regex with http/https and domain checking      |
+| `validate_password_strength` | Password strength check: min 8 chars, digit, uppercase, lowercase, special char | Multiple regex checks for complexity           |
 
 
 
@@ -507,6 +528,25 @@ survey.buttons.finish_text = "Завершить опрос"
 survey.buttons.multi_select_confirm = "Подтвердить"
 survey.buttons.start_again = "Начать заново"
 ```
+## Валидаторы 
+## В последнем обновлении появились валидаторы по имени вопроса
+
+| Имя валидатора               | Описание                                                                               | Логика / примечание                               |
+|------------------------------|----------------------------------------------------------------------------------------|---------------------------------------------------|
+| `validate_not_empty`         | Проверяет, что строка не пустая (с учетом пробелов)                                    | `bool(value и value.strip())`                     |
+| `validate_email`             | Простая проверка email через регулярное выражение                                      | Регулярное выражение `^[\w\.-]+@[\w\.-]+\.\w+$`   |
+| `validate_zip_code`          | Проверяет почтовый индекс: 5 или 6 цифр подряд                                         | `^\d{5,6}$`                                       |
+| `validate_username`          | Имя пользователя: буквы, цифры и подчеркивания, длина 3-30 символов                    | `^\w{3,30}$`                                      |
+| `name`                       | Имя: только буквы и дефисы, длина 1-50                                                 | `^[A-Za-zА-Яа-яЁё\-]+$`                           |
+| `phone_ru`                   | Российский телефон: +7XXXXXXXXXX или 8XXXXXXXXXX                                       | `^(?:\+7\|8)\d{10}$`                              |
+| `phone`                      | Универсальная проверка телефона с помощью библиотеки phonenumbers                      | Использует `phonenumbers` для парсинга и проверки |
+| `age`                        | Возраст: число от 0 до 120                                                             | Целое число, 0 ≤ age ≤ 120                        |
+| `height`                     | Рост в сантиметрах: от 30 до 300                                                       | float, 30 ≤ height ≤ 300                          |
+| `weight`                     | Вес в кг: от 2 до 500                                                                  | float, 2 ≤ weight ≤ 500                           |
+| `gender`                     | Гендер с поддержкой русских и английских вариантов, регистр неважен                    | Проверка принадлежности к набору допустимых строк |
+| `validate_positive_int`      | Проверяет, что значение — положительное целое число                                    | `value.isdigit() и int(value) > 0`                |
+| `validate_url`               | Простая проверка URL                                                                   | Регулярное выражение с http/https и доменом       |
+| `validate_password_strength` | Проверка сложности пароля: минимум 8 символов, цифра, заглавная, строчная, спецсимво   | Несколько регулярных выражений проверки           |
 
 
 
