@@ -344,8 +344,8 @@ survey.add_question(
 survey.add_question(
     text="Ваш возраст?",
     question_type="number",
-    name="age",
-    validator=age # Вы можете использовать готовые валидаторы из раздела validators
+    name="age", # 
+    # validator=age # Вы можете использовать готовые валидаторы из раздела validators или использовать автоматические валидаторы по имени вопроса 
 )
 survey.add_question(
     text="Выберите пол",
@@ -513,6 +513,7 @@ survey.buttons.start_again = "Начать заново"
 # ToDo
 - add media list handler
 - add 2 type logging 
+- multichoice result splitters chane to ```;``` 
 - check same questions name in list
 - add survey database saver. To save complete survey_to database. And call by his id
 # for any errors send me a telegram message to [@fugguri](https://t/me/fugguri).
