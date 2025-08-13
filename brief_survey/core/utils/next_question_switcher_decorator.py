@@ -44,7 +44,9 @@ def auto_switch_next_question(func):
             elif question.type == 'with_confirm' and selected:
                 return result
             elif question.type == 'multi_choice' and widget.widget_id == "confirm":
+                if next_state_name:
                     await manager.switch_to(self.state_map[next_state_name])
+                else:await manager.next()
             elif question.type == 'multi_choice' and selected:
                 return result
             elif next_state_name:

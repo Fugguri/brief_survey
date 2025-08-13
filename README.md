@@ -512,6 +512,7 @@ survey.buttons.start_again = "Начать заново"
 
 # ToDo
 - add media list handler
+- add 2 type logging 
 - check same questions name in list
 - add survey database saver. To save complete survey_to database. And call by his id
 # for any errors send me a telegram message to [@fugguri](https://t/me/fugguri).
