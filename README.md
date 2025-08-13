@@ -516,5 +516,6 @@ survey.buttons.start_again = "Начать заново"
 - multichoice result splitters chane to ```;``` 
 - check same questions name in list
 - add survey database saver. To save complete survey_to database. And call by his id
+- add validator sections in readme
 # for any errors send me a telegram message to [@fugguri](https://t/me/fugguri).
 # ☕️bye me a coffe appreciated 
