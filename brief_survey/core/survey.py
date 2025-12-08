@@ -217,9 +217,12 @@ class BriefSurvey(Generic[ResultModelType]):
         if not question:
             await c.answer(self.info_messages.question_not_found)
             return True
-
         ctx_data = manager.current_context().dialog_data
         multi_selected = ctx_data.get(f"multi_selected_{state_name}", set())
+
+        if len(multi_selected) > question.multi_choice_len:
+            return await c.answer(f"Выберите {len(multi_selected)} варианта/тов")
+
         if not isinstance(multi_selected, set):
             multi_selected = set(multi_selected)
 
@@ -231,7 +234,6 @@ class BriefSurvey(Generic[ResultModelType]):
 
         ctx_data[question.name] = ", ".join(multi_selected)
         try:
-
             await c.answer(f"Выбрано: {', '.join(multi_selected) if multi_selected else 'ничего'}")
         except:
             pass
@@ -354,16 +356,29 @@ class BriefSurvey(Generic[ResultModelType]):
             ]
             elements.extend(buttons)
         elif question.type == "multi_choice":
-            buttons = [
-                Button(text=Const(label), id=str(i), on_click=self._process_multi_choice_selected)
-                for i, (_, label) in enumerate(question.choices)  # type: ignore
-            ]
+
+            if isinstance(question.choices,dict):
+                buttons = [
+                    Button(text=Const(value), id=str(key), on_click=self._process_multi_choice_selected)
+                    for key,value in question.choices.items() # type: ignore
+                ]
+            elif isinstance(question.choices,list):
+                buttons = [
+                    Button(text=Const(label), id=str(i), on_click=self._process_multi_choice_selected)
+                    for i, (_, label) in enumerate(question.choices)  # type: ignore
+                ]
+            else:
+                buttons = [
+                    Button(text=Const(label), id=str(i), on_click=self._process_multi_choice_selected)
+                    for i, (_, label) in enumerate(question.choices)  # type: ignore
+                ]
             confirm_btn = Button(
                 Const(self.buttons.multi_select_confirm  ),
                                  id="confirm",
                                  on_click=self._confirm_multi_choice)
             elements.extend(buttons)
             elements.append(confirm_btn)
+
         elif question.type in ["photo", "video", "media"]:
             if question.type == "photo":
                 allowed_types = [ContentType.PHOTO]

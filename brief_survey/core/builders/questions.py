@@ -20,6 +20,7 @@ class QuestionBuilder:
                media: Optional[str] = None,
                validator_error_message:Optional[str] = None,
                confirm_field_name:Optional[str]=None,
+               multi_choice_len:int=100,
                *args,
                **kwargs) -> 'QuestionBase':
         model_cls = QUESTION_TYPE_MAP.get(question_type)
@@ -35,6 +36,7 @@ class QuestionBuilder:
                          media=media,
                          validator_error_message=validator_error_message,
                          confirm_field_name=confirm_field_name,
+                         multi_choice_len=multi_choice_len,
                          *args,
                          **kwargs
                          )

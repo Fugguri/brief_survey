@@ -16,6 +16,7 @@ class QuestionBase(BaseModel):
     media: Optional[str] = None,
     forced_exit_validator: Optional[Callable[[str], bool]] = None
     validator_error_message: Optional[str] =None
+
     confirm_field_name:Optional[str] ="Введенные данные:"
     @field_validator('type')
     def type_must_be_known(cls, v):
@@ -23,6 +24,13 @@ class QuestionBase(BaseModel):
             raise UnknownQuestionTypeError
         return v
 
+    multi_choice_len:Optional[int] = 100
+
+    @field_validator("multi_choice_len")
+    def check_multi_choice_len(cls, v):
+        if v < 1:
+            raise ValueError("Multi choice length must be greater than 0")
+        return v
 
 class ChoiceQuestion(QuestionBase):
     choices: List[Tuple[str | int, str]]
@@ -35,7 +43,7 @@ class ChoiceQuestion(QuestionBase):
 
 
 class MultiChoiceQuestion(QuestionBase):
-    choices: List[Tuple[str, str]]
+    choices: List[Tuple[str, str]]|Dict[str, str]
 
     @field_validator("choices")
     def check_choices_non_empty(cls, v, values):
