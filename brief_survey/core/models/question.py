@@ -38,8 +38,7 @@ class ChoiceQuestion(QuestionBase):
 
     @field_validator("choices")
     def check_choices_non_empty(cls, v, values):
-        print(v)
-        if not v or not isinstance(v, list) or not isinstance(v, dict):
+        if not v or not type(v) in [list, dict]:
             raise ValueError("Choices must be a non-empty list")
         return v
 
