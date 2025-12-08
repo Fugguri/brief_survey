@@ -222,7 +222,7 @@ class BriefSurvey(Generic[ResultModelType]):
         multi_selected = ctx_data.get(f"multi_selected_{state_name}", set())
 
 
-        if len(multi_selected) >= question.multi_choice_len:
+        if selected_text not in multi_selected and  len(multi_selected) >= question.multi_choice_len:
             return await c.answer(self.info_messages.multi_select_length_limitation.format(length=question.multi_choice_len or '100'))
         if not isinstance(multi_selected, set):
             multi_selected = set(multi_selected)
@@ -266,7 +266,7 @@ class BriefSurvey(Generic[ResultModelType]):
     def create_multi_select_window(self,question , **kwargs):
         elements = []
         getter = self._multi_choice_getter
-        elements.append(Format('{question_text}{selected_text}'))
+        elements.append(Format('{question_text}{selected_text}\n\nВы можете отменить выбор нажав на тот же пункт меню.'))
         if isinstance(question.choices, dict):
             buttons = [
                 Button(text=Const(key), id=str(value), on_click=self._process_multi_choice_selected)
