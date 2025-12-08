@@ -15,7 +15,7 @@ setup(
     long_description_content_type='text/markdown',
     long_description=readme(),
     classifiers=[
-        'Programming Language :: Python :: 3.12+',
+        'Programming Language :: Python :: 3.12',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent'
     ],
