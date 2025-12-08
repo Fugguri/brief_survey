@@ -433,10 +433,8 @@ class BriefSurvey(Generic[ResultModelType]):
     async def _on_finish(self, c: types.CallbackQuery, button, manager: DialogManager):
         data = manager.current_context().dialog_data
         user_id = c.from_user.id
-        print(data)
-        result_obj = self.result_model.model_validate(data)
         try:
-            ...
+            result_obj = self.result_model.model_validate(data)
         except ValidationError as e:
             await c.message.answer(f"Некорректные данные:\n" + "\n".join(
                 [f"{err['loc'][0]}: {err['msg']}" for err in e.errors()]
