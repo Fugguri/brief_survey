@@ -8,13 +8,13 @@ from aiogram import types, Dispatcher, F
 from aiogram.fsm.context import FSMContext
 from aiogram_dialog import Dialog, DialogManager, Window, StartMode, setup_dialogs
 from aiogram_dialog.widgets.kbd import Button
-from aiogram_dialog.widgets.text import Const
+from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram.filters import Command
 from aiogram.fsm.state import StatesGroup, State
 from pydantic import BaseModel, create_model, Field
-from typing import Optional, Callable, Set, Generic, TypeVar, Type, Dict, Tuple, Any, List
+from typing import Optional, Callable, Set, Generic, TypeVar, Type, Dict, Tuple, Any, List, Union
 
 from .builders.questions import QuestionBuilder
 from .exceptions.questions import NoQuestionsEnteredError, MessageTextNotEnteredError, QuestionNotFountError
@@ -209,6 +209,7 @@ class BriefSurvey(Generic[ResultModelType]):
         manager.current_context().dialog_data[question.name] = selected
         await c.answer()
 
+    #Множественный выбор
     @auto_switch_next_question
     async def _process_multi_choice_selected(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
         selected_text = widget.text.text
@@ -220,9 +221,9 @@ class BriefSurvey(Generic[ResultModelType]):
         ctx_data = manager.current_context().dialog_data
         multi_selected = ctx_data.get(f"multi_selected_{state_name}", set())
 
-        if len(multi_selected) > question.multi_choice_len:
-            return await c.answer(f"Выберите {len(multi_selected)} варианта/тов")
 
+        if len(multi_selected) >= question.multi_choice_len:
+            return await c.answer(self.info_messages.multi_select_length_limitation.format(length=question.multi_choice_len or '100'))
         if not isinstance(multi_selected, set):
             multi_selected = set(multi_selected)
 
@@ -231,12 +232,71 @@ class BriefSurvey(Generic[ResultModelType]):
         else:
             multi_selected.add(selected_text)
         ctx_data[f"multi_selected_{state_name}"] = multi_selected
+        #todo:Добавить возможность использовать ключи для модели
 
+        # if question.use_key_for_model:
+        #     ctx_data[question.name] = ", ".join(multi_selected)
+        # else:
         ctx_data[question.name] = ", ".join(multi_selected)
         try:
+            await manager.update({
+                "question_text": question.text,
+                "selected_text": "\n-".join(multi_selected) if multi_selected else "",
+            })
             await c.answer(f"Выбрано: {', '.join(multi_selected) if multi_selected else 'ничего'}")
         except:
             pass
+
+    async def _multi_choice_getter(self, dialog_manager: DialogManager, **kwargs):
+        ctx = dialog_manager.current_context()
+        state_name = ctx.state.state.split(":")[1]
+        question = self._get_question(state_name)
+
+        ctx_data = ctx.dialog_data
+        multi_selected = ctx_data.get(f"multi_selected_{state_name}", set())
+        if not isinstance(multi_selected, set):
+            multi_selected = set(multi_selected)
+        #todo: language
+
+        return {
+            "question_text": question.text if question else "",
+            "selected_text": "\nВыбрано:\n-"+"\n-".join(multi_selected) if multi_selected else "",
+        }
+
+    def create_multi_select_window(self,question , **kwargs):
+        elements = []
+        getter = self._multi_choice_getter
+        elements.append(Format('{question_text}{selected_text}'))
+        if isinstance(question.choices, dict):
+            buttons = [
+                Button(text=Const(key), id=str(value), on_click=self._process_multi_choice_selected)
+                for key, value in question.choices.items()  # type: ignore
+            ]
+        elif isinstance(question.choices, list):
+            buttons = [
+                Button(text=Const(label), id=str(i), on_click=self._process_multi_choice_selected)
+                for i, (_, label) in enumerate(question.choices)  # type: ignore
+            ]
+        else:
+            buttons = []
+        confirm_btn = Button(
+            Const(self.buttons.multi_select_confirm),
+            id="confirm",
+            on_click=self._confirm_multi_choice)
+        elements.extend(buttons)
+        elements.append(confirm_btn)
+        return elements, getter
+
+    @auto_switch_next_question
+    async def _confirm_multi_choice(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
+        ctx_data = manager.current_context().dialog_data
+
+        state_name = manager.current_context().state.state.split(":")[1]
+        multi_selected = ctx_data.get(f"multi_selected_{state_name}", set())
+        question = self._get_question(state_name)
+
+        ctx_data[question.name] = ", ".join(multi_selected)
+        await c.answer()
 
     @auto_switch_next_question
     async def _process_media_input(self, message: types.Message, dialog: Dialog, manager: DialogManager):
@@ -291,17 +351,6 @@ class BriefSurvey(Generic[ResultModelType]):
         return
 
     @auto_switch_next_question
-    async def _confirm_multi_choice(self, c: types.CallbackQuery, widget: Button, manager: DialogManager):
-        ctx_data = manager.current_context().dialog_data
-
-        state_name = manager.current_context().state.state.split(":")[1]
-        multi_selected = ctx_data.get(f"multi_selected_{state_name}", set())
-        question = self._get_question(state_name)
-
-        ctx_data[question.name] = ", ".join(multi_selected)
-        await c.answer()
-
-    @auto_switch_next_question
     async def _confirm_text_with_confirmation(self, c: types.CallbackQuery, button: Button, manager: DialogManager,*args,**kwargs):
         ctx_data = manager.current_context().dialog_data
 
@@ -334,52 +383,41 @@ class BriefSurvey(Generic[ResultModelType]):
 
         # Базовые элементы окна
         elements = []
-        if qtext:
-            elements.append(Const(qtext))
+
         if question.media:
             elements.append(StaticMedia(path=question.media))
-
+        getter =None
         # Обработка по типу вопроса
         if question.type in ["text", "number"]:
+            elements.append(Const(qtext))
             elements.append(MessageInput(self._process_text_input))
         elif question.type =="with_confirm":
             elements.append(MessageInput(self._process_text_input_with_confirmation))
-
+            elements.append(Const(qtext))
             confirm_btn = Button(Const(f"Подтвердить {question.confirm_field_name.replace(':','')}"
                 if question.confirm_field_name  else self.buttons.confirm_entered_text), id="confirm_text",
                                  on_click=self._confirm_text_with_confirmation)
             elements.append(confirm_btn)
         elif question.type == "choice":
-            buttons = [
-                Button(text=Const(label), id=key, on_click=self._process_choice_selected)
-                for key, label in question.choices  # type: ignore
-            ]
-            elements.extend(buttons)
-        elif question.type == "multi_choice":
-
+            elements.append(Const(qtext))
             if isinstance(question.choices,dict):
                 buttons = [
-                    Button(text=Const(value), id=str(key), on_click=self._process_multi_choice_selected)
-                    for key,value in question.choices.items() # type: ignore
+                Button(text=Const(label), id=key, on_click=self._process_choice_selected)
+                for key, label in question.choices  # type: ignore
                 ]
             elif isinstance(question.choices,list):
                 buttons = [
-                    Button(text=Const(label), id=str(i), on_click=self._process_multi_choice_selected)
-                    for i, (_, label) in enumerate(question.choices)  # type: ignore
+                Button(text=Const(label), id=str(i), on_click=self._process_choice_selected)
+                for i, (_, label) in enumerate(question.choices)  # type: ignore
                 ]
             else:
-                buttons = [
-                    Button(text=Const(label), id=str(i), on_click=self._process_multi_choice_selected)
-                    for i, (_, label) in enumerate(question.choices)  # type: ignore
-                ]
-            confirm_btn = Button(
-                Const(self.buttons.multi_select_confirm  ),
-                                 id="confirm",
-                                 on_click=self._confirm_multi_choice)
+                buttons = []
             elements.extend(buttons)
-            elements.append(confirm_btn)
+        elif question.type == "multi_choice":
+            elements, getter = self.create_multi_select_window(question)
 
         elif question.type in ["photo", "video", "media"]:
+            elements.append(Const(qtext))
             if question.type == "photo":
                 allowed_types = [ContentType.PHOTO]
             elif question.type == "video":
@@ -390,13 +428,15 @@ class BriefSurvey(Generic[ResultModelType]):
         else:
             raise QuestionNotFountError(question.type)
 
-        return Window(*elements, state=state)
+        return Window(*elements, state=state,getter=getter)
 
     async def _on_finish(self, c: types.CallbackQuery, button, manager: DialogManager):
         data = manager.current_context().dialog_data
         user_id = c.from_user.id
+        print(data)
+        result_obj = self.result_model.model_validate(data)
         try:
-            result_obj = self.result_model.parse_obj(data)
+            ...
         except ValidationError as e:
             await c.message.answer(f"Некорректные данные:\n" + "\n".join(
                 [f"{err['loc'][0]}: {err['msg']}" for err in e.errors()]
@@ -419,7 +459,6 @@ class BriefSurvey(Generic[ResultModelType]):
             await c.message.delete()
             await manager.done()
             await self.state.clear()
-
 
     async def start(self, message: types.Message, dialog_manager: DialogManager, state: FSMContext):
         first_state_name = self.questions[0].name if self.questions else None
@@ -499,15 +538,16 @@ class BriefSurvey(Generic[ResultModelType]):
             text: str,
             question_type: QuestionType = "text",
             name: str = None,
-            choices: Optional[List[str] | Tuple[str] | Set[str]] = None,
-            validator: Optional[Callable[[str], bool]|str] = None,
+            choices: Optional[List[str] | Tuple[str] | Set[str] | Dict[str, str]] = None,
+            validator: Optional[Callable[[str], bool] | str] = None,
             next_questions: Optional[Dict[str, str]] = None,  # например {"Yes": "q3", "No": "q4"},
             next_question: Optional[str] = None,  # name следующего вопроса, нужно для ветвления запросов
             media_path: Optional[str] = None,
             forced_exit_validator: Optional[Callable[[str], bool]] = None,
-            validate_by_question_name:bool=True,
-            validator_error_message:Optional[str]=None,
-            confirm_field_name:Optional[str]=None,
+            validate_by_question_name: bool = True,
+            validator_error_message: Optional[str] = None,
+            confirm_field_name: Optional[str] = None,
+            multy_choice_len: Optional[int] = 100,
             *args,
             **kwargs
     ) -> Question:
@@ -518,7 +558,7 @@ class BriefSurvey(Generic[ResultModelType]):
                    text (str): Текст вопроса (обязателен).
                    question_type (str): Тип вопроса: "text", "number", "choice", "multi_choice", "photo", "video", "media".
                    name (str, optional): Уникальное имя вопроса (если не указано — генерируется автоматически).
-                   choices (list, optional): Список вариантов для "choice" и "multi_choice".
+                   choices (list, optional): Список вариантов для "choice" и "multi_choice". Dict for multi_choice only
                    validator (Callable, optional): Функция-валидатор для ответа.
                    next_questions (dict, optional): Словарь переходов к следующим вопросам по ответу.
                    next_question (str, optional): Имя следующего вопроса (для линейного перехода).
@@ -534,7 +574,9 @@ class BriefSurvey(Generic[ResultModelType]):
                        text="Ваш возраст?",
                        question_type="number",
                        name="age",
-                       validator=lambda x: x.isdigit() and 0 < int(x) < 120
+                       validator=lambda x: x.isdigit() and 0 < int(x) < 120,
+                       choices=["Да", "Нет"],
+
                    )
                    :param text:
                    :param question_type:
@@ -547,17 +589,24 @@ class BriefSurvey(Generic[ResultModelType]):
                    :param validator_error_message:
                    :param validate_by_question_name:
                    :param forced_exit_validator:
+                   :param multi_choice_len:
                """
 
         if not text:
             raise MessageTextNotEnteredError("Текст вопроса не может быть пустым.")
         if choices:
-            choices = [(str(i[0]), i[1]) for i in enumerate(choices)]
+            if isinstance(choices, dict):
+                choices = [(key, value) for key, value in choices.items()]
+            else:
+                choices = [(str(i[0]), i[1]) for i in enumerate(choices)]
         if choices and question_type == "text":
             question_type = 'choice'
         if not name:
             name = f"q{len(self.questions) + 1}"
 
+        # TODO: вынести валидатор в отдельный метод
+        # TODO: Добавить к валидатору готовый набор функций.
+        # Например:имени, выбора дней недели и тд...
         if type(validator) == str:
             find_validator = find_validator_by_name(validator)
             if not find_validator:
@@ -566,6 +615,7 @@ class BriefSurvey(Generic[ResultModelType]):
         if not validator and validate_by_question_name:
             find_validator = find_validator_by_name(name)
             validator = find_validator
+
         question_model = QuestionBuilder.create(
             text=text,
             question_type=question_type,
@@ -578,6 +628,7 @@ class BriefSurvey(Generic[ResultModelType]):
             forced_exit_validator=forced_exit_validator,
             validator_error_message=validator_error_message,
             confirm_field_name=confirm_field_name,
+            multi_choice_len=multy_choice_len,
             *args,
             **kwargs
         )

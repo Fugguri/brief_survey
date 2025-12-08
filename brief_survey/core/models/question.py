@@ -32,22 +32,24 @@ class QuestionBase(BaseModel):
             raise ValueError("Multi choice length must be greater than 0")
         return v
 
+#todo:MediaQuestion,VideoQuestion,PhotoQuestion
 class ChoiceQuestion(QuestionBase):
-    choices: List[Tuple[str | int, str]]
+    choices: List[Tuple[str | int, str] |Dict[str|int, str|int]]
 
     @field_validator("choices")
     def check_choices_non_empty(cls, v, values):
-        if not v or not isinstance(v, list):
+        print(v)
+        if not v or not isinstance(v, list) or not isinstance(v, dict):
             raise ValueError("Choices must be a non-empty list")
         return v
 
 
-class MultiChoiceQuestion(QuestionBase):
-    choices: List[Tuple[str, str]]|Dict[str, str]
+class MultiChoiceQuestion(ChoiceQuestion):
+    choices: List[Tuple[str, str]]| Dict[str|int, str|int]
 
     @field_validator("choices")
     def check_choices_non_empty(cls, v, values):
-        if not v or not isinstance(v, list):
+        if not v or not type(v) in [list, dict]:
             raise ValueError("Choices must be a non-empty list")
         return v
 

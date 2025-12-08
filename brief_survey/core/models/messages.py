@@ -11,6 +11,7 @@ class InfoMessages(BaseModel):
     start_message:str = Field(default=None)
     forced_exit_message:str = Field(default="Выход из опроса.Введенные данные не позволяют продолжить опрос")
     no_confirmed_data:str = Field(default='Укажите запрашиваемые данные чтобы продолжить...')
+    multi_select_length_limitation:str = Field(default='Количество вариантов ограничено.\nВы можете выбрать от 1 до {length}')
 
     class Config:
         from_attributes=True
