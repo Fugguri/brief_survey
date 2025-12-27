@@ -1,4 +1,4 @@
-
+import inspect
 
 from aiogram.enums import ContentType
 from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
@@ -15,6 +15,7 @@ from aiogram.filters import Command
 from aiogram.fsm.state import StatesGroup, State
 from pydantic import BaseModel, create_model, Field
 from typing import Optional, Callable, Set, Generic, TypeVar, Type, Dict, Tuple, Any, List, Union, Awaitable
+import inspect
 
 from .builders.questions import QuestionBuilder
 from .exceptions.questions import NoQuestionsEnteredError, MessageTextNotEnteredError, QuestionNotFountError
@@ -460,18 +461,26 @@ class BriefSurvey(Generic[ResultModelType]):
             await manager.done()
             await self.state.clear()
 
-    async def pre_brief_check(self, message: types.Message):
-        if self.pre_brief_check:
-            if isinstance(self.pre_brief_check, Awaitable):
-                if await self.pre_brief_check(message):
-                    await message.answer(self.info_messages.pre_brief_check_fail)
-                    return
-            if isinstance(self.pre_brief_check, Callable):
-                if await self.pre_brief_check(message):
-                    await message.answer(self.info_messages.pre_brief_check_fail)
-                    return
+    async def _pre_brief_checker(self, message: types.Message) -> bool:
+        if self.pre_brief_check is None:
+            return False
+            
+        if inspect.isawaitable(self.pre_brief_check):
+            result = await self.pre_brief_check
+        elif callable(self.pre_brief_check):
+            result = self.pre_brief_check(message)
+            if inspect.isawaitable(result):
+                result = await result
+        else:
+            return False
+            
+        if result:
+            await message.answer(self.info_messages.pre_brief_check_fail)
+            return True
+        return False
     async def start(self, message: types.Message, dialog_manager: DialogManager, state: FSMContext):
-
+        if await self._pre_brief_checker(message):
+            return
         first_state_name = self.questions[0].name if self.questions else None
         if self.info_messages.start_message:
             await message.answer(self.info_messages.start_message)
