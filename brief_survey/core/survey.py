@@ -14,7 +14,7 @@ from aiogram_dialog.widgets.media import StaticMedia
 from aiogram.filters import Command
 from aiogram.fsm.state import StatesGroup, State
 from pydantic import BaseModel, create_model, Field
-from typing import Optional, Callable, Set, Generic, TypeVar, Type, Dict, Tuple, Any, List, Union
+from typing import Optional, Callable, Set, Generic, TypeVar, Type, Dict, Tuple, Any, List, Union, Awaitable
 
 from .builders.questions import QuestionBuilder
 from .exceptions.questions import NoQuestionsEnteredError, MessageTextNotEnteredError, QuestionNotFountError
@@ -79,7 +79,7 @@ class BriefSurvey(Generic[ResultModelType]):
             states_prefix: str = "SurveyStates",
             start_command: str = "start_survey",
             final_reply_markup: InlineKeyboardMarkup | ReplyKeyboardMarkup = None,
-            pre_brief_check: Optional[Callable] = None,
+            pre_brief_check: Optional[Callable|Awaitable] = None,
     ):
         """
                Инициализация опросника.
@@ -460,11 +460,18 @@ class BriefSurvey(Generic[ResultModelType]):
             await manager.done()
             await self.state.clear()
 
-    async def start(self, message: types.Message, dialog_manager: DialogManager, state: FSMContext):
+    async def pre_brief_check(self, message: types.Message):
         if self.pre_brief_check:
-            if await self.pre_brief_check(message):
-                await message.answer(self.info_messages.pre_brief_check_fail)
-                return
+            if isinstance(self.pre_brief_check, Awaitable):
+                if await self.pre_brief_check(message):
+                    await message.answer(self.info_messages.pre_brief_check_fail)
+                    return
+            if isinstance(self.pre_brief_check, Callable):
+                if await self.pre_brief_check(message):
+                    await message.answer(self.info_messages.pre_brief_check_fail)
+                    return
+    async def start(self, message: types.Message, dialog_manager: DialogManager, state: FSMContext):
+
         first_state_name = self.questions[0].name if self.questions else None
         if self.info_messages.start_message:
             await message.answer(self.info_messages.start_message)
