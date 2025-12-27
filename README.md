@@ -347,6 +347,7 @@ survey = BriefSurvey(
     start_command='start_brief' # Можно настраивать команду начала опроса
 )
 
+
 #Можно настраивать сообщения об ошибках
 survey.info_messages.invalid_input = "Получены неверные данные, попробуйте еще раз"
 
@@ -528,7 +529,37 @@ survey.buttons.finish_text = "Завершить опрос"
 survey.buttons.multi_select_confirm = "Подтвердить"
 survey.buttons.start_again = "Начать заново"
 ```
-## Валидаторы 
+## Валидаторы
+
+### pre_brief_check
+
+`pre_brief_check` - это функция предварительной проверки, которая вызывается перед началом опроса. Она позволяет проверить условия у пользователя перед тем, как начать опрос.
+
+- Принимает в качестве аргумента объект `message` от aiogram
+- Должна возвращать `True`, если опрос не может быть начат
+- Если функция возвращает `True`, опрос не начнется и пользователю будет показано сообщение `pre_brief_check_fail`
+
+Сообщение об ошибке можно настроить через `survey.info_messages.pre_brief_check_fail`.
+
+Пример использования:
+
+```python
+async def check_user_status(message: types.Message) -> bool:
+    # Проверяем, завершил ли пользователь предыдущий опрос
+    user_id = message.from_user.id
+    if user_id in completed_surveys:
+        return True  # Опрос не будет начат
+    return False
+
+survey = BriefSurvey(
+    save_handler=save_handler,
+    pre_brief_check=check_user_status
+)
+
+# Настройка кастомного сообщения
+survey.info_messages.pre_brief_check_fail = "Вы уже проходили данный опрос ранее."
+```
+
 ## В последнем обновлении появились валидаторы по имени вопроса
 
 | Имя валидатора               | Описание                                                                               | Логика / примечание                               |

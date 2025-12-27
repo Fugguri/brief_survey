@@ -78,7 +78,8 @@ class BriefSurvey(Generic[ResultModelType]):
             questions: Optional[List[Question]] = None,
             states_prefix: str = "SurveyStates",
             start_command: str = "start_survey",
-            final_reply_markup: InlineKeyboardMarkup | ReplyKeyboardMarkup = None
+            final_reply_markup: InlineKeyboardMarkup | ReplyKeyboardMarkup = None,
+            pre_brief_check: Optional[Callable] = None,
     ):
         """
                Инициализация опросника.
@@ -125,6 +126,7 @@ class BriefSurvey(Generic[ResultModelType]):
         self.final_reply_markup = final_reply_markup
         self._dialog = None
         self.state: FSMContext = None
+        self.pre_brief_check = pre_brief_check
 
     @staticmethod
     def _create_states_group(class_name: str, state_names: List[str]):
@@ -459,6 +461,10 @@ class BriefSurvey(Generic[ResultModelType]):
             await self.state.clear()
 
     async def start(self, message: types.Message, dialog_manager: DialogManager, state: FSMContext):
+        if self.pre_brief_check:
+            if await self.pre_brief_check(message):
+                await message.answer(self.info_messages.pre_brief_check_fail)
+                return
         first_state_name = self.questions[0].name if self.questions else None
         if self.info_messages.start_message:
             await message.answer(self.info_messages.start_message)
